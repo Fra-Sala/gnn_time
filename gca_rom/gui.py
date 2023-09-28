@@ -50,6 +50,10 @@ def hyperparameters_selection(name, var, n):
         elif name == "stokes_u":
             preset = [3, 2, 2, 2, 1, 3, 3, 1]
         return preset
+        elif name == "lid_cavity":
+            preset = [3, 2, 2, 2, 1, 3, 3, 1]
+        return preset
+
 
 
     preset = default_values(name)
