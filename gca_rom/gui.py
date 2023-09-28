@@ -49,7 +49,6 @@ def hyperparameters_selection(name, var, n):
             preset = [3, 2, 2, 2, 1, 1, 3, 2]
         elif name == "stokes_u":
             preset = [3, 2, 2, 2, 1, 3, 3, 1]
-        return preset
         elif name == "lid_cavity":
             preset = [3, 2, 2, 2, 1, 3, 3, 1]
         return preset
