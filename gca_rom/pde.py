@@ -98,8 +98,8 @@ def problem(argument):
         case 11:
             problem_name = "lid_cavity"
             variable = 'U'
-            mu1 = np.linspace(0.01, 10., 10)  # this is a dummy parameter
-            mu2 = np.linspace(0.01, 20., 100)[::5] #this should be the time
-            mu_space = [mu1, mu2]
-            n_param = 2
+            mu1 = np.linspace(0.01, 20., 100)  # time
+            #mu2 = np.linspace(0.01, 20., 100)[::5] #
+            mu_space = [mu1]
+            n_param = 1
     return problem_name, variable, mu_space, n_param
