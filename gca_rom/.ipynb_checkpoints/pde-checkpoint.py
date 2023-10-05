@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 def problem(argument):
     """
     problem(argument: int) -> Tuple[str, str, np.ndarray, np.ndarray]
@@ -98,8 +99,13 @@ def problem(argument):
         case 11:
             problem_name = "lid_cavity"
             variable = 'U'
-            mu1 = np.linspace(0.01, 10., 10)  # this is a dummy parameter
-            mu2 = np.linspace(0.01, 20., 100)[::5] #this should be the time
+            #with open('alphaM.npy', 'rb') as f:
+    
+            mu1 = np.array([[-1.56164241, 1.69642353, -0.77954267, -2.50894837, 1.17784446],
+                [-8.81802628, -5.47931022, -5.43882871, -1.52585026, -2.36874186]])
+
+            mu1 = mu1.flatten()  # fourier coefficents (right now 5 for each simulation)
+            mu2 = np.linspace(0.01, 20., 100) #time
             mu_space = [mu1, mu2]
             n_param = 2
     return problem_name, variable, mu_space, n_param
