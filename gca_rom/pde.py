@@ -105,7 +105,7 @@ def problem(argument):
                 [-8.81802628, -5.47931022, -5.43882871, -1.52585026, -2.36874186]])
 
             mu1 = mu1.flatten()  # fourier coefficents (right now 5 for each simulation)
-            mu2 = np.linspace(0.01, 20., 100) #time
+            mu2 = np.linspace(0.0, 2., 10) #time
             mu_space = [mu1, mu2]
             n_param = 2
     return problem_name, variable, mu_space, n_param
