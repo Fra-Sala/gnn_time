@@ -101,11 +101,18 @@ def problem(argument):
             variable = 'U'
             #with open('alphaM.npy', 'rb') as f:
     
-            mu1 = np.array([[-1.56164241, 1.69642353, -0.77954267, -2.50894837, 1.17784446],
-                [-8.81802628, -5.47931022, -5.43882871, -1.52585026, -2.36874186]])
+#             mu1 = np.array([[-1.56164241, 1.69642353, -0.77954267, -2.50894837, 1.17784446],
+#                 [-8.81802628, -5.47931022, -5.43882871, -1.52585026, -2.36874186]])
 
-            mu1 = mu1.flatten()  # fourier coefficents (right now 5 for each simulation)
-            mu2 = np.linspace(0.0, 2., 10) #time
-            mu_space = [mu1, mu2]
-            n_param = 2
+#             mu1 = mu1.flatten()  # fourier coefficents (right now 5 for each simulation)
+#             mu2 = np.linspace(0.0, 2., 10) #time
+#             mu_space = [mu1, mu2]
+#             n_param = 6
+        
+            mu_range = [(-1.56164241, -8.81802628), (1.69642353, -5.47931022), (-0.77954267, -5.43882871), (-2.50894837, -1.52585026), (1.17784446, -2.36874186), (0.0, 2)]
+            mu_space = []
+            n_pts = [2]*(len(mu_range)-1)+[10]
+            for i in range(len(mu_range)):
+                mu_space.append(np.linspace(mu_range[i][0], mu_range[i][1], n_pts[i]))
+            n_param = 6
     return problem_name, variable, mu_space, n_param
