@@ -86,7 +86,9 @@ def plot_error(res, VAR_all, scaler_all, HyperParams, mu_space, params, train_tr
     tr_pt_2 = params[train_trajectories, p2]
     if n_params > 2:
         rows, ind = np.unique(params[:, [p1, p2]], axis=0, return_inverse=True)
+        print(rows, ind)
         indices_dict = defaultdict(list)
+        ipdb.set_trace()
         [indices_dict[tuple(rows[i])].append(idx) for idx, i in enumerate(ind)]
         error = np.array([np.mean(error[indices]) for indices in indices_dict.values()])
         tr_pt = [i for i in indices_dict if any(idx in train_trajectories for idx in indices_dict[i])]
