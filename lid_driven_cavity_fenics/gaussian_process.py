@@ -1,13 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def generate_fourier_coeff(mu, sigma, N_F):
-
-    alphav = np.random.normal(mu, sigma, N_F)
-    
-    return alphav
-
-
 def eval_u_t(t, alphav, T_f):
     """
     Evaluate u_t(t) = sum_{i=1}^{N_F} (alpha_i / i^2) * sin(2 * pi * i * t/T_f).

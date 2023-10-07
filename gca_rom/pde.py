@@ -109,10 +109,22 @@ def problem(argument):
 #             mu_space = [mu1, mu2]
 #             n_param = 6
         
-            mu_range = [(-1.56164241, -8.81802628), (1.69642353, -5.47931022), (-0.77954267, -5.43882871), (-2.50894837, -1.52585026), (1.17784446, -2.36874186), (0.0, 1.8)]
-            mu_space = []
-            n_pts = [2]*(len(mu_range)-1)+[10]
-            for i in range(len(mu_range)):
-                mu_space.append(np.linspace(mu_range[i][0], mu_range[i][1], n_pts[i]))
-            n_param = 6
+            # mu_range = [(-1.56164241, -8.81802628), (1.69642353, -5.47931022), (-0.77954267, -5.43882871), (-2.50894837, -1.52585026), (1.17784446, -2.36874186), (0.0, 1.8)]
+            # mu_space = []
+            # n_pts = [2]*(len(mu_range)-1)+[10]
+            # for i in range(len(mu_range)):
+            #     mu_space.append(np.linspace(mu_range[i][0], mu_range[i][1], n_pts[i]))
+            # n_param = 6
+            
+            # Load the matrix from alphaM.npy
+            alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            alphaM_cols = [alphaM[:, i].tolist() for i in range(alphaM.shape[1])]
+            mu1 = alphaM_cols[0]
+            mu2 = alphaM_cols[1]
+            mu3 = alphaM_cols[2]
+            mu4 = alphaM_cols[3]
+            mu5 = np.linspace(0.0,1.8,10)
+            mu_space = [mu1, mu2, mu3, mu4,mu5]
+            n_param = 5
+
     return problem_name, variable, mu_space, n_param
