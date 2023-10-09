@@ -112,7 +112,7 @@ def problem(argument):
             mu_time = np.linspace(0.0, 1.8, 10)
             mu_space.append(mu_time.tolist())
             n_param = n_coeff + 1
-            ipdb.set_trace()
+            #ipdb.set_trace()
             
 #             alphaM_cols = [alphaM[:, i].tolist() for i in range(alphaM.shape[1])]
             
@@ -132,7 +132,7 @@ def problem(argument):
 #             for i in range(u_t_matrix.shape[0]):
 #                 mu_space.append(u_t_matrix_rows[i])
 #             mu_space.append(np.linspace(0.0, 1.8, 10))
-#             ipdb.set_trace()      
+#             #ipdb.set_trace()      
 #             n_param = 2
             
             
