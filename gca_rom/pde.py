@@ -103,15 +103,15 @@ def problem(argument):
             """ Fourier expansion approach (4 frequencies)  """
             
             # Load the matrix from alphaM.npy
-            alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
-            K = alphaM.shape[0]
-            n_coeff = alphaM.shape[1]
-            mu_space = []
-            for i in range(n_coeff):
-                mu_space.append(alphaM[:, i].tolist())
-            mu_time = np.linspace(0.0, 1.8, 10)
-            mu_space.append(mu_time.tolist())
-            n_param = n_coeff + 1
+            # alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            # K = alphaM.shape[0]
+            # n_coeff = alphaM.shape[1]
+            # mu_space = []
+            # for i in range(n_coeff):
+            #     mu_space.append(alphaM[:, i].tolist())
+            # mu_time = np.linspace(0.0, 1.8, 10)
+            # mu_space.append(mu_time.tolist())
+            # n_param = n_coeff + 1
             #ipdb.set_trace()
             
 #             alphaM_cols = [alphaM[:, i].tolist() for i in range(alphaM.shape[1])]
@@ -126,14 +126,14 @@ def problem(argument):
             
             """ Non causal (?) approach  """
             
-#             u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
-#             u_t_matrix_rows = [u_t_matrix[i, :].tolist() for i in range(u_t_matrix.shape[0])]
-#             mu_space = []
-#             for i in range(u_t_matrix.shape[0]):
-#                 mu_space.append(u_t_matrix_rows[i])
-#             mu_space.append(np.linspace(0.0, 1.8, 10))
-#             #ipdb.set_trace()      
-#             n_param = 2
+            u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
+            u_t_matrix_rows = [u_t_matrix[i, :].tolist() for i in range(u_t_matrix.shape[0])]
+            mu_space = []
+            for i in range(u_t_matrix.shape[0]):
+                mu_space.append(u_t_matrix_rows[i])
+            mu_space.append(np.linspace(0.0, 1.8, 10))
+            #ipdb.set_trace()      
+            n_param = 2
             
             
             
