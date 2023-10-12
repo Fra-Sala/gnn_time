@@ -104,48 +104,30 @@ def problem(argument):
             """ Fourier expansion approach (n frequencies)  """
             
             #Load the matrix from alphaM.npy
-            # alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
-            # K = alphaM.shape[0]
-            # n_coeff = alphaM.shape[1]
-            # mu_space = []
-            # for i in range(n_coeff):
-            #     mu_space.append(alphaM[:, i].tolist())
-            # mu_time = np.linspace(0.0, 1.8, 10)
-            # mu_space.append(mu_time.tolist())
-            # n_param = n_coeff + 1
-            #ipdb.set_trace()
+            #alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            #### IF IN GOOGLE COLAB #######
+            alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+            K = alphaM.shape[0]
+            n_coeff = alphaM.shape[1]
+            mu_space = []
+            for i in range(n_coeff):
+                mu_space.append(alphaM[:, i].tolist())
+            mu_time = np.linspace(0.0, 1.8, 10)
+            mu_space.append(mu_time.tolist())
+            n_param = n_coeff + 1
+          
             
-#             alphaM_cols = [alphaM[:, i].tolist() for i in range(alphaM.shape[1])]
+
+            """ Non causal approach  """
             
-#             mu1 = alphaM_cols[0]
-#             mu2 = alphaM_cols[1]
-#             mu3 = alphaM_cols[2]
-#             mu4 = alphaM_cols[3]
-#             mu5 = np.linspace(0.0,1.8,10)
-#             mu_space = [mu1, mu2, mu3, mu4,mu5]
-#             n_param = 5
-            
-            """ Non causal (?) approach  """
-            
-            u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
-            u_t_matrix = u_t_matrix.reshape(-1)
-            mu1 = u_t_matrix
-            mu2 = np.linspace(0.0, 1.8, 10)
-            mu_space = [mu1, mu2]
-            
-            
-            
-            
-#             [u_t_matrix[i, :] for i in range(u_t_matrix.shape[0])]
-#             mu_space = []
-#             mu1 = np.concatenate((u_t_matrix_rows[0], u_t_matrix_rows[1], u_t_matrix_rows[2]), axis = None)
-                
-#             time = np.linspace(0.0, 1.8, 10)
-#             mu2 = np.tile(time, 3)
-#             mu_space = [mu1, mu2]
-           
-            ipdb.set_trace()      
-            n_param = 2
+            # u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
+            # ##### IF IN GOOGLE COLAB #######
+            # # u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix.npy')
+            # u_t_matrix = u_t_matrix.reshape(-1)
+            # mu1 = u_t_matrix
+            # mu2 = np.linspace(0.0, 1.8, 10)
+            # mu_space = [mu1, mu2]   
+            # n_param = 2
             
             
             
