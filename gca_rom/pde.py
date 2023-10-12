@@ -37,6 +37,7 @@ def problem(argument):
             mu1 = np.linspace(0., 6., 10)
             mu2 = np.linspace(-1.0, 1.0, 10)
             mu_space = [mu1, mu2]
+            ipdb.set_trace()
             n_param = 2
         case 3:
             problem_name = "graetz"
@@ -100,9 +101,9 @@ def problem(argument):
             problem_name = "lid_cavity"
             variable = 'U'
             
-            """ Fourier expansion approach (4 frequencies)  """
+            """ Fourier expansion approach (n frequencies)  """
             
-            # Load the matrix from alphaM.npy
+            #Load the matrix from alphaM.npy
             # alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
             # K = alphaM.shape[0]
             # n_coeff = alphaM.shape[1]
@@ -127,12 +128,23 @@ def problem(argument):
             """ Non causal (?) approach  """
             
             u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
-            u_t_matrix_rows = [u_t_matrix[i, :].tolist() for i in range(u_t_matrix.shape[0])]
-            mu_space = []
-            for i in range(u_t_matrix.shape[0]):
-                mu_space.append(u_t_matrix_rows[i])
-            mu_space.append(np.linspace(0.0, 1.8, 10))
-            #ipdb.set_trace()      
+            u_t_matrix = u_t_matrix.reshape(-1)
+            mu1 = u_t_matrix
+            mu2 = np.linspace(0.0, 1.8, 10)
+            mu_space = [mu1, mu2]
+            
+            
+            
+            
+#             [u_t_matrix[i, :] for i in range(u_t_matrix.shape[0])]
+#             mu_space = []
+#             mu1 = np.concatenate((u_t_matrix_rows[0], u_t_matrix_rows[1], u_t_matrix_rows[2]), axis = None)
+                
+#             time = np.linspace(0.0, 1.8, 10)
+#             mu2 = np.tile(time, 3)
+#             mu_space = [mu1, mu2]
+           
+            ipdb.set_trace()      
             n_param = 2
             
             
