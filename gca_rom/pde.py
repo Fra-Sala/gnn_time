@@ -103,9 +103,9 @@ def problem(argument):
             """ Fourier expansion approach (n frequencies)  """
             
             #Load the matrix from alphaM.npy
-            alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            #alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
             #### IF IN GOOGLE COLAB #######
-            #alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+            alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
             K = alphaM.shape[0]
             n_coeff = alphaM.shape[1]
             mu_space = []

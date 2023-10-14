@@ -4,8 +4,8 @@ docs/_build/
 docs/_static/
 docs/_templates
 *.pt
-*.npy
 *.csv
 *tmp
 *checkpoint.py
 large_simulations/
+tutorials/
