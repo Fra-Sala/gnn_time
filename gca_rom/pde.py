@@ -37,7 +37,6 @@ def problem(argument):
             mu1 = np.linspace(0., 6., 10)
             mu2 = np.linspace(-1.0, 1.0, 10)
             mu_space = [mu1, mu2]
-            ipdb.set_trace()
             n_param = 2
         case 3:
             problem_name = "graetz"
@@ -104,9 +103,9 @@ def problem(argument):
             """ Fourier expansion approach (n frequencies)  """
             
             #Load the matrix from alphaM.npy
-            #alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
             #### IF IN GOOGLE COLAB #######
-            alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+            #alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
             K = alphaM.shape[0]
             n_coeff = alphaM.shape[1]
             mu_space = []
