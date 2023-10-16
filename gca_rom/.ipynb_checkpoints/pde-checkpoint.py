@@ -103,10 +103,12 @@ def problem(argument):
             """ Fourier expansion approach (n frequencies)  """
             
             #Load the matrix from alphaM.npy
-            #alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
-            #### IF IN GOOGLE COLAB #######
-            alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
-            K = alphaM.shape[0]
+            
+            if 'google.colab' in str(get_ipython()):
+                alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+            else:
+                alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+            
             n_coeff = alphaM.shape[1]
             mu_space = []
             for i in range(n_coeff):
@@ -119,9 +121,11 @@ def problem(argument):
 
             """ Non causal approach  """
             
-            # u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
-            # ##### IF IN GOOGLE COLAB #######
-            # # u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix.npy')
+            # if 'google.colab' in str(get_ipython()):
+            #     u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix.npy')
+            # else:
+            #     u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
+        
             # u_t_matrix = u_t_matrix.reshape(-1)
             # mu1 = u_t_matrix
             # mu2 = np.linspace(0.0, 1.8, 10)
