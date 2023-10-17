@@ -110,11 +110,12 @@ def problem(argument):
                 alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
             
             n_coeff = alphaM.shape[1]
+            # here we use a list since in general the number of values for each coefficient may differ
             mu_space = []
             for i in range(n_coeff):
-                mu_space.append(alphaM[:, i].tolist())
+                mu_space.append(alphaM[:, i])
             mu_time = np.linspace(0.0, 1.8, 10)
-            mu_space.append(mu_time.tolist())
+            mu_space.append(mu_time)
             n_param = n_coeff + 1
           
             
