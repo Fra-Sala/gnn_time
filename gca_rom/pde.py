@@ -123,9 +123,9 @@ def problem(argument):
             """ Non causal approach  """
             
             if 'google.colab' in str(get_ipython()):
-                u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix.npy')
+                u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
             else:
-                u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix.npy')
+                u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
         
             u_t_matrix = u_t_matrix.reshape(-1)
             mu1 = u_t_matrix
