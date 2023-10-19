@@ -104,34 +104,37 @@ def problem(argument):
             
             #Load the matrix from alphaM.npy
             
-            if 'google.colab' in str(get_ipython()):
-                alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
-            else:
-                alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+#             if 'google.colab' in str(get_ipython()):
+#                 alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+#             else:
+#                 alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
             
-            n_coeff = alphaM.shape[1]
-            # here we use a list since in general the number of values for each coefficient may differ
-            mu_space = []
-            for i in range(n_coeff):
-                mu_space.append(alphaM[:, i])
-            mu_time = np.linspace(0.0, 1.8, 10)
-            mu_space.append(mu_time)
-            n_param = n_coeff + 1
+#             n_coeff = alphaM.shape[1]
+#             # here we use a list since in general the number of values for each coefficient may differ
+#             mu_space = []
+#             for i in range(n_coeff):
+#                 mu_space.append(alphaM[:, i])
+#             mu_time = np.linspace(0.2, 1.8, 9)
+#             mu_space.append(mu_time)
+#             n_param = n_coeff + 1
           
             
 
             """ Non causal approach  """
             
-#             if 'google.colab' in str(get_ipython()):
-#                 u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
-#             else:
-#                 u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
+            if 'google.colab' in str(get_ipython()):
+                u_t_matrix = np.load('/content/gnn_time/lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
+            else:
+                u_t_matrix = np.load('../lid_driven_cavity_fenics/u_t_matrix_Fourier.npy')
         
-#             u_t_matrix = u_t_matrix.reshape(-1)
-#             mu1 = u_t_matrix
-#             mu2 = np.linspace(0.0, 1.8, 10)
-#             mu_space = [mu1, mu2]   
-#             n_param = 2
+            u_t_matrix = u_t_matrix.reshape(-1)
+            # Get rid of the initial condition evaluation (0.0)
+            u_t_matrix = np.delete(u_t_matrix, np.s_[::10], 0)
+        
+            mu1 = u_t_matrix
+            mu2 = np.linspace(0.2, 1.8, 9)
+            mu_space = [mu1, mu2]   
+            n_param = 2
             
             
             
