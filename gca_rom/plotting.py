@@ -59,6 +59,81 @@ def plot_latent(HyperParams, latents, latents_estimation):
     ax.boxplot(latents_estimation.detach().numpy(), flierprops=green_diamond)
     plt.savefig(HyperParams.net_dir+'box_plot_latents'+HyperParams.net_run+'.png', bbox_inches='tight', dpi=500)
     
+def plot_error_multip(res, VAR_all, scaler_all, HyperParams, mu_space, params, train_trajectories, vars, p1=0, p2=-1):
+    """
+    This function plots the relative error between the predicted and actual results, for a number of parameters larger than 1
+    using time and each of the other n_params-1 parameters for the plot.
+
+    Parameters:
+    res (ndarray): The predicted results
+    VAR_all (ndarray): The actual results
+    scaler_all (object): The scaler object used for scaling the results
+    HyperParams (object): The HyperParams object holding the necessary hyperparameters
+    mu1_range (ndarray): Range of the first input variable
+    mu2_range (ndarray): Range of the second input variable
+    params (ndarray): The input variables
+    train_trajectories (ndarray): The indices of the training data
+    vars (str): The name of the variable being plotted
+    """
+
+    u_hf = scaling.inverse_scaling(VAR_all, scaler_all, HyperParams.scaling_type)
+    u_app = scaling.inverse_scaling(res, scaler_all, HyperParams.scaling_type)
+    error = np.linalg.norm(u_app - u_hf, axis=0) / np.linalg.norm(u_hf, axis=0)
+    #ipdb.set_trace()
+    # mu_space_cp = mu_space
+    # #Create a ndarray containing the parameters
+    # time = mu_space_cp.pop()
+    # params = []
+    # for i in range(len(mu_space_cp[0])):
+    #     set_coeff = [arr[i] for arr in mu_space_cp]
+    #     for j in range(len(time)):
+    #         new_set = np.concatenate((set_coeff, [time[j]]), axis = 0)
+    #         params.append(new_set)
+    # params = np.array(params)
+    
+    # For each parameter, realize a plot
+    time_range = mu_space[-1]
+    n_params = params.shape[1]
+    for i in range(n_params-1):  
+        mu_i_range = mu_space[i]
+     
+        tr_pt_1 = params[train_trajectories, i]
+        tr_pt_2 = params[train_trajectories, -1]
+        # if n_params > 2:
+        #     rows, ind = np.unique(params[:, [p1, p2]], axis=0, return_inverse=True)
+        #     print(rows, ind)
+        #     indices_dict = defaultdict(list)
+        #     ipdb.set_trace()
+        #     [indices_dict[tuple(rows[i])].append(idx) for idx, i in enumerate(ind)]
+        #     error = np.array([np.mean(error[indices]) for indices in indices_dict.values()])
+        #     tr_pt = [i for i in indices_dict if any(idx in train_trajectories for idx in indices_dict[i])]
+        #     tr_pt_1 = [t[0] for t in tr_pt]
+        #     tr_pt_2 = [t[1] for t in tr_pt]
+        X1, X2 = np.meshgrid(mu_i_range, time_range, indexing='ij')
+        output = np.reshape(error, (len(mu_i_range), len(time_range)))
+        fig = plt.figure('Relative Error '+vars)
+        ax = fig.add_subplot(projection='3d')
+        z_anchor = np.zeros_like(output)
+        dx= 0.3
+        dy = 0.02
+        ax.bar3d(X1.flatten(), X2.flatten(), z_anchor.flatten(), dx, dy, output.flatten(), cmap=cm.coolwarm,  alpha = 1)
+        #ax.scatter(X1, X2, output, cmap=cm.coolwarm, color='blue')
+        #ax.contour(X1, X2, output, zdir='z', offset=output.min(), cmap=cm.coolwarm)
+        ax.set(xlim=tuple([np.min(mu_i_range), np.max(mu_i_range)]),
+               ylim=tuple([time_range[0], time_range[-1]]),
+               xlabel=f'$\mu_{str(i+1)}$',
+               ylabel=f'$t$',
+               zlabel='$\\epsilon_{GCA}(\\mathbf{\mu})$')
+        ax.plot(tr_pt_1, tr_pt_2, output.min()*np.ones(len(tr_pt_1)), '*r')
+        plt.ticklabel_format(axis='z', style='sci', scilimits=(0, 0))
+        ax.set_title('Relative Error '+vars)
+        ax.zaxis.offsetText.set_visible(False)
+        exponent_axis = np.floor(np.log10(max(ax.get_zticks()))).astype(int)
+        ax.text2D(0.9, 0.82, "1e"+str(exponent_axis), transform=ax.transAxes, fontsize="x-large")
+        plt.tight_layout()
+        plt.savefig(HyperParams.net_dir+'relative_error_'+vars+HyperParams.net_run+'_'+str(i+1)+'.png', transparent=True, dpi=500)
+        plt.show()
+    
 
 def plot_error(res, VAR_all, scaler_all, HyperParams, mu_space, params, train_trajectories, vars, p1=0, p2=-1):
     """
