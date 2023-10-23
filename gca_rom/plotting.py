@@ -94,6 +94,8 @@ def plot_error_multip(res, VAR_all, scaler_all, HyperParams, mu_space, params, t
     # For each parameter, realize a plot
     time_range = mu_space[-1]
     n_params = params.shape[1]
+    colors = 0.0
+    area = 0.0
     for i in range(n_params-1):  
         mu_i_range = mu_space[i]
      
@@ -112,24 +114,29 @@ def plot_error_multip(res, VAR_all, scaler_all, HyperParams, mu_space, params, t
         X1, X2 = np.meshgrid(mu_i_range, time_range, indexing='ij')
         output = np.reshape(error, (len(mu_i_range), len(time_range)))
         fig = plt.figure('Relative Error '+vars)
-        ax = fig.add_subplot(projection='3d')
-        z_anchor = np.zeros_like(output)
-        dx= 0.3
-        dy = 0.02
-        ax.bar3d(X1.flatten(), X2.flatten(), z_anchor.flatten(), dx, dy, output.flatten(), cmap=cm.coolwarm,  alpha = 1)
+        ax = fig.add_subplot()
+        # z_anchor = np.zeros_like(output)
+        # dx= 0.3
+        # dy = 0.02
+        # ax.bar3d(X1.flatten(), X2.flatten(), z_anchor.flatten(), dx, dy, output.flatten(), cmap=cm.coolwarm,  alpha = 1)
+        if i == 0:
+            colors = output.flatten()
+            area = output.flatten()*1000
+
+        plt.scatter(X1.flatten(), X2.flatten(), s=area, c= colors, alpha=0.5)
         #ax.scatter(X1, X2, output, cmap=cm.coolwarm, color='blue')
         #ax.contour(X1, X2, output, zdir='z', offset=output.min(), cmap=cm.coolwarm)
-        ax.set(xlim=tuple([np.min(mu_i_range), np.max(mu_i_range)]),
-               ylim=tuple([time_range[0], time_range[-1]]),
+        ax.set(xlim = [-10,10], #xlim=tuple([np.min(mu_i_range), np.max(mu_i_range)]
+               ylim=[0,2],
                xlabel=f'$\mu_{str(i+1)}$',
-               ylabel=f'$t$',
-               zlabel='$\\epsilon_{GCA}(\\mathbf{\mu})$')
-        ax.plot(tr_pt_1, tr_pt_2, output.min()*np.ones(len(tr_pt_1)), '*r')
-        plt.ticklabel_format(axis='z', style='sci', scilimits=(0, 0))
+               ylabel=f'$t$')
+               #zlabel='$\\epsilon_{GCA}(\\mathbf{\mu})$')
+        ax.plot(tr_pt_1, tr_pt_2,'*r')
+        # plt.ticklabel_format(axis='z', style='sci', scilimits=(0, 0))
         ax.set_title('Relative Error '+vars)
-        ax.zaxis.offsetText.set_visible(False)
-        exponent_axis = np.floor(np.log10(max(ax.get_zticks()))).astype(int)
-        ax.text2D(0.9, 0.82, "1e"+str(exponent_axis), transform=ax.transAxes, fontsize="x-large")
+        # ax.zaxis.offsetText.set_visible(False)
+        # exponent_axis = np.floor(np.log10(max(ax.get_zticks()))).astype(int)
+        # ax.text2D(0.9, 0.82, "1e"+str(exponent_axis), transform=ax.transAxes, fontsize="x-large")
         plt.tight_layout()
         plt.savefig(HyperParams.net_dir+'relative_error_'+vars+HyperParams.net_run+'_'+str(i+1)+'.png', transparent=True, dpi=500)
         plt.show()
