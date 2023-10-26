@@ -120,9 +120,9 @@ def problem(argument):
 
 #             1,2,3 coefficients A TIME
             if 'google.colab' in str(get_ipython()):
-                alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alphaM.npy')
+                alphaM = np.load('/content/gnn_time/lid_driven_cavity_fenics/alpha1.npy')
             else:
-                alphaM = np.load('../lid_driven_cavity_fenics/alphaM.npy')
+                alphaM = np.load('../lid_driven_cavity_fenics/alpha1.npy')
             
             n_coeff = alphaM.shape[1]
             # here we use a list since in general the number of values for each coefficient may differ
