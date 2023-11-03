@@ -127,7 +127,7 @@ def problem(argument):
             n_coeff = alphaM.shape[1]
             # here we use a list since in general the number of values for each coefficient may differ
             mu_space = []
-            last_coeff = 4
+            last_coeff = 1
             for i in range(last_coeff):
                 mu_space.append(alphaM[:, i])
             mu_time = np.linspace(0.2, 1.8, 9)

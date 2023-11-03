@@ -78,7 +78,7 @@ def plot_error_multip(res, VAR_all, scaler_all, HyperParams, mu_space, params, t
 
     u_hf = scaling.inverse_scaling(VAR_all, scaler_all, HyperParams.scaling_type)
     u_app = scaling.inverse_scaling(res, scaler_all, HyperParams.scaling_type)
-    error = np.linalg.norm(u_app - u_hf, axis=0) / np.linalg.norm(u_hf, axis=0)
+    error = np.linalg.norm(u_app - u_hf, axis=0) / np.mean(np.linalg.norm(u_hf, axis=0))
     #ipdb.set_trace()
     # mu_space_cp = mu_space
     # #Create a ndarray containing the parameters
@@ -123,7 +123,8 @@ def plot_error_multip(res, VAR_all, scaler_all, HyperParams, mu_space, params, t
             colors = output.flatten()
             area = output.flatten()*1000
 
-        plt.scatter(X1.flatten(), X2.flatten(), s=area, c= colors, alpha=0.5)
+        sc = plt.scatter(X1.flatten(), X2.flatten(), s=area, c= colors, alpha=0.5, cmap=cm.coolwarm)
+        plt.colorbar(sc)
         #ax.scatter(X1, X2, output, cmap=cm.coolwarm, color='blue')
         #ax.contour(X1, X2, output, zdir='z', offset=output.min(), cmap=cm.coolwarm)
         ax.set(xlim = [-10,10], #xlim=tuple([np.min(mu_i_range), np.max(mu_i_range)]
@@ -160,7 +161,7 @@ def plot_error(res, VAR_all, scaler_all, HyperParams, mu_space, params, train_tr
 
     u_hf = scaling.inverse_scaling(VAR_all, scaler_all, HyperParams.scaling_type)
     u_app = scaling.inverse_scaling(res, scaler_all, HyperParams.scaling_type)
-    error = np.linalg.norm(u_app - u_hf, axis=0) / np.linalg.norm(u_hf, axis=0)
+    error = np.linalg.norm(u_app - u_hf, axis=0) / np.mean(np.linalg.norm(u_hf, axis=0))
     mu1_range = mu_space[p1]
     mu2_range = mu_space[p2]
     n_params = params.shape[1]
