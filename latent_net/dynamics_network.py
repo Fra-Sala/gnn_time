@@ -60,7 +60,7 @@ class HyperParams:
         self.dt = argv[8]
         self.max_epochs = argv[9]
         self.miles = []
-        self.batch_size_pos = 20
+        self.batch_size_pos = 10
         self.gamma = 0.0001
         #self.num_nodes = 0
         self.cross_validation = True
