@@ -64,5 +64,5 @@ class PositionDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         x_pos = self.x[idx]
         y_pos = self.y[idx]
-        return (x_pos.float(), y_pos.float())
+        return (x_pos, y_pos)
 

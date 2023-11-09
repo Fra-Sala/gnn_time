@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, BatchSampler, SequentialSampler
 import numpy as np
 from gca_rom import scaling
 from loader import *
@@ -60,29 +60,31 @@ def process_and_scale_dataset(dataset, HyperParams):
     scaler_train, VAR_train = scaling.tensor_scaling(var_train, scaling_type, HyperParams.scaler_number)
     scaler_test, VAR_test = scaling.tensor_scaling(var_test, scaling_type, HyperParams.scaler_number)
  
-
+    # VAR_all = var
+    # VAR_train = var_train
+    # VAR_test = var_test
+    # scaler_all = 0
+    # scaler_test = 0
     # Create PyTorch tensors for the scaled data (redundant, only to specify single precision)
-    VAR_all_tensor = torch.tensor(VAR_all, dtype=torch.float32)
-    VAR_train_tensor = torch.tensor(VAR_train, dtype=torch.float32)
-    VAR_test_tensor = torch.tensor(VAR_test, dtype=torch.float32)
+    VAR_all_tensor = torch.tensor(VAR_all, dtype=torch.float64)
+    VAR_train_tensor = torch.tensor(VAR_train, dtype=torch.float64)
+    VAR_test_tensor = torch.tensor(VAR_test, dtype=torch.float64)
+
+    # VAR_train_tensor = VAR_train_tensor.t()
+    # VAR_test_tensor = VAR_test_tensor.t()
 
     # Create PyTorch DataLoader objects for training and testing data
-    ###### HOW TO DEAL WITH THESE PYTORCH DATASETS?
-    # train_data = TensorDataset(VAR_train_tensor) 
-    # test_data = TensorDataset(VAR_test_tensor)
-
     train_loader = DataLoader(VAR_train_tensor, batch_size=train_sims, shuffle=False)
     test_loader = DataLoader(VAR_test_tensor, batch_size=test_sims, shuffle=False)
 
-
+     
+   
+    # Create the position dataset
     x_positions = dataset.xx[:, 0]
     y_positions = dataset.yy[:, 0]
-
-    # Create a custom dataset
     position_dataset = PositionDataset(x_positions, y_positions)
 
-    # Create a DataLoader with a batch size of 10
     
-    position_loader = DataLoader(position_dataset, batch_size=HyperParams.batch_size_pos, shuffle=False)
 
-    return train_loader, test_loader, scaler_all, scaler_test, VAR_all, VAR_test, train_snapshots, test_snapshots, position_loader
+
+    return train_loader, test_loader, scaler_all, scaler_test, VAR_all, VAR_test, train_snapshots, test_snapshots, position_dataset

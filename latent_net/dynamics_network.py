@@ -60,10 +60,13 @@ class HyperParams:
         self.dt = argv[8]
         self.max_epochs = argv[9]
         self.miles = []
-        self.batch_size_pos = 10
+        self.batch_size_pos =  32
         self.gamma = 0.0001
         #self.num_nodes = 0
         self.cross_validation = True
+        self.num_pos_batches = 15
+        self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
+                            + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate) + '/'
 
 
 
