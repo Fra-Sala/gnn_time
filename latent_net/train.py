@@ -19,7 +19,7 @@ def train_dyn_rec_nets(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_s
     test_history = {"loss": [], "l1": [], "l2": []}
     min_test_loss = np.Inf
     # u_t = u_t.to(torch.float32)
-    # Create a random set of batches of positions
+
 
 
     # dyn_model.to(torch.float32)

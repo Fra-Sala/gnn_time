@@ -27,8 +27,7 @@ def process_and_scale_dataset(dataset, HyperParams):
     """
 
     # Extract data from the dataset object
-    var = dataset.U.float()
-
+    var = dataset.U
     # PROCESSING DATASET
     num_nodes = var.shape[0]
     num_graphs = var.shape[1]
