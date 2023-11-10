@@ -3,8 +3,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 from tqdm import tqdm
-from loader import *    
-from shuffle_dataset import *
+from latent_net import shuffle_dataset
 import time
 import os
 
@@ -35,7 +34,7 @@ def train_dyn_rec_nets(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_s
     for epoch in loop:
 
         # Shuffle the batches of positions
-        pos_batch_sampler, position_loader = shuffle_position_dataset(position_dataset, HyperParams, seed=epoch)
+        pos_batch_sampler, position_loader = shuffle_dataset.shuffle_position_dataset(position_dataset, HyperParams, seed=epoch)
        
         train_loss = train_one_epoch(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_scheduler, rec_scheduler, device, u_t,\
                                       times, train_loader, position_loader, train_snapshots, HyperParams, pos_batch_sampler)
@@ -47,7 +46,7 @@ def train_dyn_rec_nets(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_s
         test_history["loss"].append(test_loss)
 
         # Print the results
-        loop.set_postfix({"Loss(training)": train_history['loss'][-1], "Loss(validation)": test_history['loss'][-1]})
+        loop.set_postfix({"Loss(training)": train_history['loss'][-1], "Loss(test)": test_history['loss'][-1]})
         #print(f"Epoch {epoch}: Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}")
         
         if test_loss < min_test_loss:
@@ -59,6 +58,8 @@ def train_dyn_rec_nets(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_s
         os.makedirs(HyperParams.net_dir)
     torch.save(dyn_model.state_dict(), HyperParams.net_dir + HyperParams.net_name + '_dyn.pt')
     torch.save(rec_model.state_dict(), HyperParams.net_dir + HyperParams.net_name + '_rec.pt')
+
+    return train_history, test_history
 
 
 # Function to train for one epoch
@@ -79,7 +80,7 @@ def train_one_epoch(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_sche
         stn_vec.append(stn)
         t_integration.append(times[0])
         
-        for t in times:
+        for (k,t) in enumerate(times):
             #t.float()
             
             # To perform linear interpolation, retrieve the sequence u(t)
@@ -87,23 +88,34 @@ def train_one_epoch(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_sche
             start_index = (snap // sequence_length) * sequence_length
             end_index = start_index + sequence_length
             current_u_t = u_t[start_index:end_index]
+    
 
             # Keep making the forward step in the DynNet until we know s(t) up to the next value of t in the array times
-            while t_integration[-1] <= (t + times[-1] - times[-2]):
-                # Compute u(t*), where t* is the time for which we know s(t*).
+            if t != times[-1]:
+                while np.abs(t_integration[-1] - (times[k+1])) >= 1e-3:
+                    # Compute u(t*), where t* is the time for which we know s(t*).
 
-                # The following line only requires 1e-5 seconds on my laptop, no need to use the Fourier coeff directly
-                #       that would reduce the adaptability of the code
-                u_t_needed = torch.tensor(np.interp(np.array(t_integration[-1]), times, current_u_t))
+                    # The following line only requires 1e-5 seconds on my laptop, no need to use the Fourier coeff directly
+                    #       that would reduce the adaptability of the code
+                    u_t_needed = torch.tensor(np.interp(np.array(t_integration[-1]), times, current_u_t))
+                    
+                    dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
                 
-                dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
-               
-                stn_derivative = dyn_model(dyn_input)
-               
-                stn_plus_one = stn + HyperParams.dt * stn_derivative
-                stn_vec.append(stn_plus_one)
-                t_integration.append(t_integration[-1] + HyperParams.dt)
-                  
+                    stn_derivative = dyn_model(dyn_input)
+                
+                    stn_plus_one = stn + HyperParams.dt * stn_derivative
+                    stn_vec.append(stn_plus_one)
+                    t_integration.append(t_integration[-1] + HyperParams.dt)
+
+                index = round(float((t_integration[-1]-t))/HyperParams.dt) #int((t_integration[-1] - t) // (HyperParams.dt))
+                stn_needed = stn_vec[-index-1]
+
+            else:
+                # For the last time in times, use the last stn already computed
+                stn_needed = stn_vec[-1]
+
+            # For the RecNet, use the last stn computed at time t \in times
+            
             for j, pos in enumerate(position_loader):
                 # Only use a number of position batches as specified in Hyperparams
                 if j >= HyperParams.num_pos_batches:
@@ -112,10 +124,6 @@ def train_one_epoch(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_sche
                 pos_indices = pos_batch_sampler[j]
 
                 if len(x_pos) == HyperParams.batch_size_pos:
-                    # For the RecNet, use the last stn computed at time t \in times
-                    index = int((t_integration[-1] - t) / (HyperParams.dt))
-                    stn_needed = stn_vec[-index-1]
-
                     rec_input = torch.cat((stn_needed, x_pos, y_pos), dim=0)
                     velocity_pred = rec_model(rec_input)
                     # It is indeed retrieving the right target velocities: I have checked looking at the mat file and disabilitating the scaling
@@ -137,8 +145,7 @@ def train_one_epoch(dyn_model, rec_model, dyn_optimizer, rec_optimizer, dyn_sche
     return train_loss / len(train_snapshots)
 
 
-def evaluate_model(dyn_model, rec_model, device, u_t, times, test_loader, position_loader, test_snapshots, HyperParams,\
-                    pos_batch_sampler):
+def evaluate_model(dyn_model, rec_model, device, u_t, times, test_loader, position_loader, test_snapshots, HyperParams, pos_batch_sampler):
     test_loss = 0
     with torch.no_grad():
         for (n_snap, snap) in enumerate(test_snapshots):
@@ -152,19 +159,26 @@ def evaluate_model(dyn_model, rec_model, device, u_t, times, test_loader, positi
             stn_vec.append(stn)
             t_integration.append(times[0])
 
-            for t in times:
+            for (k,t) in enumerate(times):
                 sequence_length = len(times)
                 start_index = (snap // sequence_length) * sequence_length
                 end_index = start_index + sequence_length
                 current_u_t = u_t[start_index:end_index]
 
-                while t_integration[-1] <= (t + times[-1] - times[-2]):
-                    u_t_needed = torch.tensor(np.interp(np.array(t_integration[-1]), times, current_u_t))
-                    dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
-                    stn_derivative = dyn_model(dyn_input)
-                    stn_plus_one = stn + HyperParams.dt * stn_derivative
-                    stn_vec.append(stn_plus_one)
-                    t_integration.append(t_integration[-1] + HyperParams.dt)
+                if t != times[-1]:
+                    while np.abs(t_integration[-1] - (times[k+1])) >= 1e-3:
+                        u_t_needed = torch.tensor(np.interp(np.array(t_integration[-1]), times, current_u_t))
+                        dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
+                        stn_derivative = dyn_model(dyn_input)
+                        stn_plus_one = stn + HyperParams.dt * stn_derivative
+                        stn_vec.append(stn_plus_one)
+                        t_integration.append(t_integration[-1] + HyperParams.dt)
+
+                    index = round(float((t_integration[-1]-t))/HyperParams.dt)
+                    stn_needed = stn_vec[-index-1]
+
+                else:
+                    stn_needed = stn_vec[-1]
 
                 for j, pos in enumerate(position_loader):
                     if j >= HyperParams.num_pos_batches:
@@ -173,9 +187,6 @@ def evaluate_model(dyn_model, rec_model, device, u_t, times, test_loader, positi
                     pos_indices = pos_batch_sampler[j]
 
                     if len(x_pos) == HyperParams.batch_size_pos:
-                        index = int((t_integration[-1] - t) / (HyperParams.dt))
-                        stn_needed = stn_vec[-index-1]
-
                         rec_input = torch.cat((stn_needed, x_pos, y_pos), dim=0)
                         velocity_pred = rec_model(rec_input)
                         velocity_target = data[n_snap, np.array(pos_indices), 0]

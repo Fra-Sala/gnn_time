@@ -2,7 +2,20 @@ import torch
 from torch.utils.data import DataLoader, BatchSampler, SequentialSampler
 import numpy as np
 from gca_rom import scaling
-from loader import *
+
+
+class PositionDataset(torch.utils.data.Dataset):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        x_pos = self.x[idx]
+        y_pos = self.y[idx]
+        return (x_pos, y_pos)
 
 
 
