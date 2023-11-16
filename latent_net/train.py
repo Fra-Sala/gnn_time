@@ -131,6 +131,7 @@ def train_one_epoch(dyn_model, rec_model, optimizer, scheduler, device, alpha1_t
             #             param.grad = None 
             
         optimizer.step()
+        scheduler.step()
 
     return train_loss / len(train_snapshots)
 
