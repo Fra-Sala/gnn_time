@@ -34,6 +34,7 @@ class HyperParams:
     """
 
     def __init__(self, argv):
+
         self.net_name = argv[0]
         self.variable = argv[1]
         self.scaling_type = int(argv[2])
@@ -65,6 +66,7 @@ class HyperParams:
         #self.num_nodes = 0
         self.cross_validation = True
         self.num_pos_batches = 12 #number of batches (positions)
+        self.T_f = 2.0
         self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
                             + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate) + '/'
 
