@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader, BatchSampler, SequentialSampler
 import numpy as np
 from gca_rom import scaling
+import rff
 
 
 class PositionDataset(torch.utils.data.Dataset):
@@ -94,6 +95,12 @@ def process_and_scale_dataset(dataset, HyperParams):
     # Create the position dataset
     x_positions = dataset.xx[:, 0]
     y_positions = dataset.yy[:, 0]
+
+    # Normalize the positions min-max
+    # The positions are already inside the [0,1]^2, this normalization is redundant
+    x_positions = (x_positions - x_positions.min()) / (x_positions.max() - x_positions.min())
+    y_positions = (y_positions - y_positions.min()) / (y_positions.max() - y_positions.min())
+
     position_dataset = PositionDataset(x_positions, y_positions)
 
     
