@@ -61,12 +61,12 @@ class HyperParams:
         self.dt = argv[8]
         self.max_epochs = argv[9]
         self.miles = []
-        self.batch_size_pos =  1 # number of positions per batch
+        self.batch_pos_size =  10 # number of positions per batch
         self.rff_encoded_mult = 2
         self.gamma = 0.0001
         #self.num_nodes = 0
         self.cross_validation = True
-        self.num_pos_batches = 40 #number of batches (positions)
+        self.num_pos_batches = 60 #number of batches (positions)
         self.T_f = 2.0
         self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
                             + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate) + '/'

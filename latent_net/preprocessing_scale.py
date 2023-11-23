@@ -50,16 +50,19 @@ def process_and_scale_dataset(dataset, HyperParams):
     print("Number of shapshots processed: ", num_graphs)
     total_sims = int(num_graphs)
     rate = HyperParams.rate / 100
-    train_sims = int(rate * total_sims)
-    test_sims = total_sims - train_sims
+    #train_sims = int(rate * total_sims)
+    train_sims = 5
+    test_sims = train_sims
+    #test_sims = total_sims - train_sims
     main_loop = list(range(total_sims))
     np.random.shuffle(main_loop)
     
     # Save indices of test and training snapshots
     train_snapshots = main_loop[0:train_sims]
     train_snapshots.sort()
-    test_snapshots = main_loop[train_sims:total_sims]
-    test_snapshots.sort()
+    test_snapshots = train_snapshots
+    # test_snapshots = main_loop[train_sims:total_sims]
+    # test_snapshots.sort()
 
 
     # FEATURE SCALING
@@ -67,43 +70,60 @@ def process_and_scale_dataset(dataset, HyperParams):
     var_train = dataset.U[:, train_snapshots]
     var_test = dataset.U[:, test_snapshots]
 
-    # note that scaler is the type of scaling, while the second returned variable (e.g. VAR_all) is the original tensor, scaled
-    scaling_type = HyperParams.scaling_type
-    scaler_all, VAR_all = scaling.tensor_scaling(var, scaling_type, HyperParams.scaler_number)
-    scaler_train, VAR_train = scaling.tensor_scaling(var_train, scaling_type, HyperParams.scaler_number)
-    scaler_test, VAR_test = scaling.tensor_scaling(var_test, scaling_type, HyperParams.scaler_number)
- 
-    # VAR_all = var
-    # VAR_train = var_train
-    # VAR_test = var_test
-    # scaler_all = 0
-    # scaler_test = 0
+    VAR_all, scaler_all = normalize_input(var)
+    VAR_train,scaler_train = normalize_input(var_train)
+    VAR_test, scaler_test = normalize_input(var_test)
+
+    # Note that scaler is the type of scaling, while the second returned variable (e.g. VAR_all) is the original tensor, scaled
+    # scaling_type = HyperParams.scaling_type
+    # scaler_all, VAR_all = scaling.tensor_scaling(var, scaling_type, HyperParams.scaler_number)
+    # scaler_train, VAR_train = scaling.tensor_scaling(var_train, scaling_type, HyperParams.scaler_number)
+    # scaler_test, VAR_test = scaling.tensor_scaling(var_test, scaling_type, HyperParams.scaler_number)
+
     # Create PyTorch tensors for the scaled data (redundant, only to specify single precision)
     VAR_all_tensor = torch.tensor(VAR_all, dtype=torch.float64)
     VAR_train_tensor = torch.tensor(VAR_train, dtype=torch.float64)
     VAR_test_tensor = torch.tensor(VAR_test, dtype=torch.float64)
+    # Reshape the tensors to be consistent with the dimension in gca_rom. Possibly to be modified
+    VAR_all_tensor = VAR_all_tensor.permute(1, 0)
+    VAR_train_tensor = VAR_train_tensor.permute(1, 0)
+    VAR_test_tensor = VAR_test_tensor.permute(1, 0)
+    # Unsqueeze to be consistent with the dimension in gca_rom. Possibly to be modified
+    VAR_all_tensor = VAR_all_tensor.unsqueeze(2)
+    VAR_train_tensor = VAR_train_tensor.unsqueeze(2)
+    VAR_test_tensor = VAR_test_tensor.unsqueeze(2)
 
-    # VAR_train_tensor = VAR_train_tensor.t()
-    # VAR_test_tensor = VAR_test_tensor.t()
+
 
     # Create PyTorch DataLoader objects for training and testing data
     train_loader = DataLoader(VAR_train_tensor, batch_size=train_sims, shuffle=False)
     test_loader = DataLoader(VAR_test_tensor, batch_size=test_sims, shuffle=False)
-
-     
-   
+    
     # Create the position dataset
     x_positions = dataset.xx[:, 0]
     y_positions = dataset.yy[:, 0]
+    # Normalize the positions using normalize_input
+    x_positions, _ = normalize_input(x_positions)
+    y_positions, _ = normalize_input(y_positions)
 
-    # Normalize the positions min-max
-    # The positions are already inside the [0,1]^2, this normalization is redundant
-    x_positions = (x_positions - x_positions.min()) / (x_positions.max() - x_positions.min())
-    y_positions = (y_positions - y_positions.min()) / (y_positions.max() - y_positions.min())
-
-    position_dataset = PositionDataset(x_positions, y_positions)
+    #position_dataset = PositionDataset(x_positions, y_positions)
+    # Create position_dataset by putting x_positions and y_positions next to each other
+    x_positions = x_positions.unsqueeze(1)
+    y_positions = y_positions.unsqueeze(1)
+    position_dataset = torch.cat((x_positions,y_positions), dim=1)
 
     
 
 
     return train_loader, test_loader, scaler_all, scaler_test, VAR_all, VAR_test, train_snapshots, test_snapshots, position_dataset
+
+
+
+def normalize_input(tensor):
+    """ 
+    Normalization according to the paper
+    """
+    alpha0 = (tensor.max(dim=0)[0] + tensor.min(dim=0)[0]) / 2
+    alphaw = (tensor.max(dim=0)[0] - tensor.min(dim=0)[0]) / 2
+    normalized_tensor = (tensor - alpha0) / alphaw
+    return normalized_tensor, torch.stack((alpha0, alphaw))

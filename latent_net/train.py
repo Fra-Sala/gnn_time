@@ -21,15 +21,33 @@ def train_dyn_rec_nets(dyn_model, rec_model, optimizer, scheduler, device,\
     rec_model.to(device)
     # Progress bar
     loop = tqdm(range(HyperParams.max_epochs))
-
+    # Take the train data
+    data_train_iterator = iter(train_loader)
+    data_train = next(data_train_iterator).to(device)
+    # Take the test data
+    data_test_iterator = iter(test_loader)
+    data_test = next(data_test_iterator).to(device)
+    # Check how many batches of positions can be created
+    position_dataset.to(device)
+    tot_pos_batches = len(position_dataset) // HyperParams.batch_pos_size
+    
     for epoch in loop:
-        # Shuffle the batches of positions
-        pos_batch_sampler, position_loader = shuffle_dataset.shuffle_position_dataset(position_dataset, HyperParams, seed=epoch)
-        train_loss = train_one_epoch(dyn_model, rec_model, optimizer, scheduler, device, alpha1_tensor,\
-                                      times, train_loader, position_loader, train_snapshots, HyperParams, pos_batch_sampler)
+        # Shuffle 15 indices of the positions and create a position loader
+
+
+        #pos_batch_sampler, position_loader = shuffle_dataset.shuffle_position_dataset(position_dataset, HyperParams, seed=epoch)
+        # Generate HyperParams.num_pos_batches random number between 0 and tot_pos_batches
+        # These numbers will be the indices of the batches of positions that will be used for training
+        pos_batch_sampler = np.random.randint(0, tot_pos_batches, HyperParams.num_pos_batches)
+       
+        train_loss = train_one_epoch(dyn_model, rec_model, optimizer,  device, alpha1_tensor,\
+                                      times, data_train, position_dataset, train_snapshots, HyperParams, pos_batch_sampler)
+
         train_history["loss"].append(train_loss)
         # Evaluate the model on the test set and store the results in test_history
-        test_loss = evaluate_model(dyn_model, rec_model, device, alpha1_tensor, times, test_loader, position_loader, test_snapshots, HyperParams,\
+        pos_batch_sampler = np.random.randint(0, tot_pos_batches, HyperParams.num_pos_batches)
+        
+        test_loss = evaluate_model(dyn_model, rec_model, device, alpha1_tensor, times, data_test, position_dataset, test_snapshots, HyperParams,\
                                     pos_batch_sampler)
         test_history["loss"].append(test_loss)
         # Update the learning rate
@@ -52,87 +70,77 @@ def train_dyn_rec_nets(dyn_model, rec_model, optimizer, scheduler, device,\
 
 
 # Function to train for one epoch
-def train_one_epoch(dyn_model, rec_model, optimizer, scheduler, device, alpha1_tensor, times,\
-                     train_loader, position_loader, train_snapshots, HyperParams, pos_batch_sampler):
+def train_one_epoch(dyn_model, rec_model, optimizer, device, alpha1_tensor_train, times,\
+                    data, position_dataset, train_snapshots, HyperParams, pos_batch_sampler):
     train_loss = 0
     dyn_model.train()
     rec_model.train()
-    data_iterator = iter(train_loader)
-    data = next(data_iterator).to(device)
+    stn = torch.zeros(HyperParams.dim_latent, device=device)
 
-    for (n_snap, snap) in enumerate(train_snapshots):
+    for (alpha_indx,alpha) in enumerate(alpha1_tensor_train):
         optimizer.zero_grad()
         stn_vec = []
         t_integration = []
-        stn = torch.zeros(HyperParams.dim_latent, device=device)
         stn_vec.append(stn)
         t_integration.append(times[0])
         
-        for (k,t) in enumerate(times):
-            index_alpha = snap // 9            
-            number_of_integrations = round(float((times[0]))/HyperParams.dt)
+        for (t_indx, t) in enumerate(times):
+            num_integrations = round(float((times[0]))/HyperParams.dt)  # How many times we need to integrate to reach the next snapshot
 
-            if t != times[-1]:
-                for j in range(number_of_integrations):
-                    u_t_needed = gaussian_process.eval_u_t(t_integration[-1], alpha1_tensor[index_alpha], HyperParams.T_f)
+            if t != times[-1] and t != times[0]:
+                for j in range(num_integrations):
+                    # Get u(t)
+                    u_t_needed = gaussian_process.eval_u_t(t_integration[-1], alpha1_tensor_train[alpha_indx], HyperParams.T_f)
                     u_t_needed = torch.tensor(u_t_needed, device=device)
+                    # Forward pass in DynNet
                     dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
                     stn_derivative = dyn_model(dyn_input)
+                    # Forward Euler
                     stn = stn + HyperParams.dt * stn_derivative
                     stn_vec.append(stn)
+                    # Keep track of the current time
                     t_integration.append(t_integration[-1] + HyperParams.dt)
 
-            for j, pos in enumerate(position_loader):
-                if j >= HyperParams.num_pos_batches:
-                    break
-                x_pos, y_pos = pos
+            for j in pos_batch_sampler:
+                pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
+                x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
                 # Use rff to encode the positions
-                x_pos = rff_fun.rff_layer(x_pos, HyperParams)
-                y_pos = rff_fun.rff_layer(y_pos, HyperParams)
-                pos_indices = pos_batch_sampler[j]
+                # x_pos = rff_fun.rff_layer(x_pos, HyperParams)
+                # y_pos = rff_fun.rff_layer(y_pos, HyperParams)
+                rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
+                velocity_pred = rec_model(rec_input)
+                # Take the velocities of the right snapshot of the series that defines the current simulation
+                velocity_target = data[(alpha_indx*len(times)+t_indx), pos_indices, 0]
+                loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
+                train_loss += loss_rec.item()
 
-                if len(x_pos) == HyperParams.rff_encoded_mult * HyperParams.batch_size_pos:
-                    rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
-                    velocity_pred = rec_model(rec_input)
-                    velocity_target = data[n_snap, np.array(pos_indices), 0]
-                    loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
-                    loss_rec.backward(retain_graph=True)
-                    train_loss += loss_rec.item()
-
-            # if (k + 1) % 2 == 0 and k != len(times) - 1:
-            #     for param in dyn_model.parameters():
-            #         if param.grad is not None:
-            #             param.grad = None 
-            
+        loss_rec.backward()
         optimizer.step()
 
-    return train_loss / len(train_snapshots)
+    return train_loss / (len(train_snapshots)*len(times)*HyperParams.num_pos_batches)
 
 
-def evaluate_model(dyn_model, rec_model, device, alpha1_tensor, times, test_loader, position_loader, test_snapshots, HyperParams, pos_batch_sampler):
+def evaluate_model(dyn_model, rec_model, device, alpha1_tensor, times, data, position_dataset, test_snapshots, HyperParams, pos_batch_sampler):
     test_loss = 0
     dyn_model.to(device)
     rec_model.to(device)
     dyn_model.eval()
     rec_model.eval()
-    data_iterator = iter(test_loader)
-    data = next(data_iterator).to(device)
 
     with torch.no_grad():
-        for (n_snap, snap) in enumerate(test_snapshots):
+        for (alpha_indx,alpha) in enumerate(alpha1_tensor):
             stn_vec = []
             t_integration = []
             stn = torch.zeros(HyperParams.dim_latent, device=device)
             stn_vec.append(stn)
             t_integration.append(times[0])
             
-            for (k,t) in enumerate(times):
-                index_alpha = snap // 9
-                number_of_integrations = round(float((times[0]))/HyperParams.dt)
+            for (t_indx, t) in enumerate(times):
+                num_integrations = round(float((times[0]))/HyperParams.dt)
 
                 if t != times[-1]:
-                    for j in range(number_of_integrations):
-                        u_t_needed = gaussian_process.eval_u_t(t_integration[-1], alpha1_tensor[index_alpha], HyperParams.T_f)
+                    for j in range(num_integrations):
+                        u_t_needed = gaussian_process.eval_u_t(t_integration[-1], alpha1_tensor[alpha_indx], HyperParams.T_f)
                         u_t_needed = torch.tensor(u_t_needed, device=device)
                         dyn_input = torch.cat((u_t_needed.unsqueeze(0), stn), dim=0)
                         stn_derivative = dyn_model(dyn_input)
@@ -140,19 +148,17 @@ def evaluate_model(dyn_model, rec_model, device, alpha1_tensor, times, test_load
                         stn_vec.append(stn)
                         t_integration.append(t_integration[-1] + HyperParams.dt)
 
-                for j, pos in enumerate(position_loader):
-                    if j >= HyperParams.num_pos_batches:
-                        break
-                    x_pos, y_pos = pos
-                    x_pos = rff_fun.rff_layer(x_pos, HyperParams)
-                    y_pos = rff_fun.rff_layer(y_pos, HyperParams)
-                    pos_indices = pos_batch_sampler[j]
+                for j in pos_batch_sampler:
+                    pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
+                    x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
+                    rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
+                    velocity_pred = rec_model(rec_input)
+                    velocity_target = data[(alpha_indx*len(times)+t_indx), pos_indices, 0]
+                    # if j == pos_batch_sampler[0]:
+                    #     print("velocity_pred: ", velocity_pred)
+                    #     print("velocity_target: ", velocity_target)
+                  
+                    loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
+                    test_loss += loss_rec.item()
 
-                    if len(x_pos) == HyperParams.rff_encoded_mult * HyperParams.batch_size_pos:
-                        rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
-                        velocity_pred = rec_model(rec_input)
-                        velocity_target = data[n_snap, np.array(pos_indices), 0]
-                        loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
-                        test_loss += loss_rec.item()
-
-    return test_loss / len(test_snapshots)
+    return test_loss / (len(test_snapshots)*len(times)*HyperParams.num_pos_batches)
