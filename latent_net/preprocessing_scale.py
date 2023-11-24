@@ -21,7 +21,7 @@ class PositionDataset(torch.utils.data.Dataset):
 
 
 
-def process_and_scale_dataset(dataset, HyperParams):
+def process_and_scale_dataset(dataset, HyperParams, params):
     """
     process_and_scale_dataset: function to process and scale the input dataset.
 
@@ -42,33 +42,45 @@ def process_and_scale_dataset(dataset, HyperParams):
 
     # Extract data from the dataset object
     var = dataset.U
+    total_sims = len(params)
     # PROCESSING DATASET
     num_nodes = var.shape[0]
     num_graphs = var.shape[1]
 
     print("Number of nodes processed: ", num_nodes)
-    print("Number of shapshots processed: ", num_graphs)
-    total_sims = int(num_graphs)
-    rate = HyperParams.rate / 100
-    #train_sims = int(rate * total_sims)
-    train_sims = 5
-    test_sims = train_sims
-    #test_sims = total_sims - train_sims
-    main_loop = list(range(total_sims))
-    np.random.shuffle(main_loop)
-    
-    # Save indices of test and training snapshots
-    train_snapshots = main_loop[0:train_sims]
-    train_snapshots.sort()
-    test_snapshots = train_snapshots
-    # test_snapshots = main_loop[train_sims:total_sims]
-    # test_snapshots.sort()
+    print("Number of simulations processed: ", total_sims)
 
+    # Only one snapshot, same for test and train
+    train_snapshots = [0]
+    test_snapshots = [0]
+    params_train = params
+    params_test = params
+    train_sims = 1
+    test_sims = 1
+
+    # rate = HyperParams.rate / 100
+    # # Split params in two vectors, params_train and params_test, according to the rate
+    # params_train = params[0:int(rate*total_sims)]
+    # params_test = params[int(rate*total_sims):total_sims]
+    # # Retrieve the number of snapshots per single parameter
+    # num_snapshots = int(num_graphs/total_sims)
+    # # Create a list of indices of the snapshots
+    # snapshots = list(range(num_graphs))
+    # # Take the train_snapshots associeted with params_train
+    # train_sims = int(rate*num_graphs)
+    # test_sims = num_graphs - train_sims
+    # train_snapshots = snapshots[0:train_sims]
+    # # Take the test_snapshots associeted with params_test
+    # test_snapshots = snapshots[train_sims:num_graphs]
+
+  
 
     # FEATURE SCALING
     # save the velocity fields of both datasets (one column contains all the velocities
-    var_train = dataset.U[:, train_snapshots]
-    var_test = dataset.U[:, test_snapshots]
+    # var_train = dataset.U[:, train_snapshots]
+    # var_test = dataset.U[:, test_snapshots]
+    var_train = dataset.U
+    var_test = dataset.U
 
     VAR_all, scaler_all = normalize_input(var)
     VAR_train,scaler_train = normalize_input(var_train)
@@ -115,7 +127,8 @@ def process_and_scale_dataset(dataset, HyperParams):
     
 
 
-    return train_loader, test_loader, scaler_all, scaler_test, VAR_all, VAR_test, train_snapshots, test_snapshots, position_dataset
+    return train_loader, test_loader, scaler_all, scaler_test, VAR_all, VAR_test,\
+             train_snapshots, test_snapshots, position_dataset, params_train, params_test
 
 
 
