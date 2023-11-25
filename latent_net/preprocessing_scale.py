@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import DataLoader, BatchSampler, SequentialSampler
 import numpy as np
 from gca_rom import scaling
-import rff
 
 
 class PositionDataset(torch.utils.data.Dataset):
@@ -60,14 +59,14 @@ def process_and_scale_dataset(dataset, HyperParams, params):
 
     rate = HyperParams.rate / 100
     # Split params in two vectors, params_train and params_test, according to the rate
-    params_train = params[0:int(rate*total_sims)]
-    params_test = params[int(rate*total_sims):total_sims]
+    params_train = params[0:round(rate*total_sims)]
+    params_test = params[round(rate*total_sims):total_sims]
     # Retrieve the number of snapshots per single parameter
     num_snapshots = int(num_graphs/total_sims)
     # Create a list of indices of the snapshots
     snapshots = list(range(num_graphs))
     # Take the train_snapshots associeted with params_train
-    train_sims = int(rate*num_graphs)
+    train_sims = (num_graphs) // len(params)*len(params_train)
     test_sims = num_graphs - train_sims
     train_snapshots = snapshots[0:train_sims]
     # Take the test_snapshots associeted with params_test

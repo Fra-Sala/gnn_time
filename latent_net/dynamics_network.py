@@ -37,19 +37,18 @@ class HyperParams:
 
         self.net_name = argv[0]
         self.variable = argv[1]
-        self.scaling_type = int(argv[2])
-        self.scaler_number = int(argv[3])
-        _, self.scaler_name = scaling.scaler_functions(self.scaler_number)
+        # self.scaling_type = int(argv[2])
+        # self.scaler_number = int(argv[3])
+        # _, self.scaler_name = scaling.scaler_functions(self.scaler_number)
         #self.skip = int(argv[4])
-        self.rate = int(argv[4])
+        self.rate = int(argv[2])
         #self.sparse_method = 'L1_mean'
         #self.ffn = int(argv[6])
         #self.nodes = int(argv[7])
         #self.bottleneck_dim = int(argv[8])
         #self.lambda_map = float(argv[9])
-        self.alpha_dyn = float(argv[5])
-        self.alpha_rec = float(argv[6])
-        self.dim_latent = int(argv[7])
+        
+        self.dim_latent = int(argv[3])
         self.seed = 10
         self.tolerance = 1e-6
         self.learning_rate = 0.001
@@ -58,18 +57,18 @@ class HyperParams:
         #self.layer_vec=[argv[11], self.nodes, self.nodes, self.nodes, self.nodes, self.bottleneck_dim]
         #self.net_run = '_' + self.scaler_name
         self.weight_decay = 0.00001
-        self.dt = argv[8]
-        self.max_epochs = argv[9]
+        self.dt = argv[4]
+        self.max_epochs = argv[5]
         self.miles = []
-        self.batch_pos_size =  20 # number of positions per batch
+        self.batch_pos_size =  argv[6] # number of positions per batch
         self.rff_encoded_mult = 2
         self.gamma = 0.0001
         #self.num_nodes = 0
         self.cross_validation = True
-        self.num_pos_batches = 20 #number of batches 
-        self.T_f = 2.0
+        self.num_pos_batches = argv[7] #number of batches 
+        self.T_f = argv[8]
         self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
-                            + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate) + '/'
+                            + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) +  '_rate' + str(self.rate) + '/'
 
 
 

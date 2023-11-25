@@ -2,10 +2,11 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from tqdm import tqdm
-from latent_net import shuffle_dataset, rff_fun
-import rff
+# from latent_net import shuffle_dataset, rff_fun
+# import rff
 import os
 from lid_driven_cavity_fenics import gaussian_process
+import matplotlib.pyplot as plt
 
 # Set default data type to float32
 #torch.set_default_dtype(torch.float32)
@@ -95,8 +96,6 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                 stn_vec.append(stn)
                 # Keep track of the current time
                 t_integration.append(t_integration[-1] + HyperParams.dt)
-            # Perform the reconstruction only if we have reached times[1]
-
 
             # Generate HyperParams.num_pos_batches random number between 0 and tot_pos_batches
             # These numbers will be the indices of the batches of positions that will be used for training
@@ -116,8 +115,8 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                 loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                 train_loss += loss_rec.item()
                 
-    loss_rec.backward()
-    optimizer.step()
+        loss_rec.backward()
+        optimizer.step()
 
     return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches)
 
@@ -158,5 +157,17 @@ def evaluate_model(dyn_model, rec_model, device, params_test, times, data, posit
                     velocity_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices, 0]
                     loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                     test_loss += loss_rec.item()
+        # Plot the latent state evolution (each component of each vector in the list stn_vec against time_integration
+    # for i in range(len(stn_vec[0])):
+    #     stn_vec_i = []
+    #     for j in range(len(stn_vec)):
+    #         stn_vec_i.append(stn_vec[j][i].item())
+    #     plt.plot(t_integration, stn_vec_i)
+    #     plt.xlabel('Time')
+    #     plt.ylabel('Latent state')
+    #     plt.title('Latent state evolution')
+    # plt.show()
+
+
 
     return test_loss / (len(params_test)*len(times)*HyperParams.num_pos_batches)
