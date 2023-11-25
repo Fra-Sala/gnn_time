@@ -51,36 +51,36 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     print("Number of simulations processed: ", total_sims)
 
     # Only one snapshot, same for test and train
-    train_snapshots = [0]
-    test_snapshots = [0]
-    params_train = params
-    params_test = params
-    train_sims = 1
-    test_sims = 1
+    # train_snapshots = [0]
+    # test_snapshots = [0]
+    # params_train = params
+    # params_test = params
+    # train_sims = 1
+    # test_sims = 1
 
-    # rate = HyperParams.rate / 100
-    # # Split params in two vectors, params_train and params_test, according to the rate
-    # params_train = params[0:int(rate*total_sims)]
-    # params_test = params[int(rate*total_sims):total_sims]
-    # # Retrieve the number of snapshots per single parameter
-    # num_snapshots = int(num_graphs/total_sims)
-    # # Create a list of indices of the snapshots
-    # snapshots = list(range(num_graphs))
-    # # Take the train_snapshots associeted with params_train
-    # train_sims = int(rate*num_graphs)
-    # test_sims = num_graphs - train_sims
-    # train_snapshots = snapshots[0:train_sims]
-    # # Take the test_snapshots associeted with params_test
-    # test_snapshots = snapshots[train_sims:num_graphs]
+    rate = HyperParams.rate / 100
+    # Split params in two vectors, params_train and params_test, according to the rate
+    params_train = params[0:int(rate*total_sims)]
+    params_test = params[int(rate*total_sims):total_sims]
+    # Retrieve the number of snapshots per single parameter
+    num_snapshots = int(num_graphs/total_sims)
+    # Create a list of indices of the snapshots
+    snapshots = list(range(num_graphs))
+    # Take the train_snapshots associeted with params_train
+    train_sims = int(rate*num_graphs)
+    test_sims = num_graphs - train_sims
+    train_snapshots = snapshots[0:train_sims]
+    # Take the test_snapshots associeted with params_test
+    test_snapshots = snapshots[train_sims:num_graphs]
 
   
 
     # FEATURE SCALING
     # save the velocity fields of both datasets (one column contains all the velocities
-    # var_train = dataset.U[:, train_snapshots]
-    # var_test = dataset.U[:, test_snapshots]
-    var_train = dataset.U
-    var_test = dataset.U
+    var_train = dataset.U[:, train_snapshots]
+    var_test = dataset.U[:, test_snapshots]
+    # var_train = dataset.U
+    # var_test = dataset.U
 
     VAR_all, scaler_all = normalize_input(var)
     VAR_train,scaler_train = normalize_input(var_train)
