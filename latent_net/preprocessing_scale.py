@@ -57,6 +57,17 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     # train_sims = 1
     # test_sims = 1
 
+    # train_snapshots = np.arange(0, 6, 1)
+    # test_snapshots = np.arange(6,12,1)
+    # params_train = params[0:2]
+  
+    # params_test = params[2:4]
+
+    # train_sims = 6
+    # test_sims = 6
+
+
+
     rate = HyperParams.rate / 100
     # Split params in two vectors, params_train and params_test, according to the rate
     params_train = params[0:round(rate*total_sims)]
@@ -139,3 +150,18 @@ def normalize_input(tensor):
     alphaw = (tensor.max(dim=0)[0] - tensor.min(dim=0)[0]) / 2
     normalized_tensor = (tensor - alpha0) / alphaw
     return normalized_tensor, torch.stack((alpha0, alphaw))
+
+
+# define the inverse function of normalize input
+def inverse_normalize_input(normalized_tensor, scaler_all, snapshot_indx):
+    # Select indices from alpha0 and alphaw using test_snapshot_indx
+    alpha0, alphaw = scaler_all[0], scaler_all[1]
+    alpha0_selected = alpha0[snapshot_indx].reshape(-1,1)
+    alphaw_selected = alphaw[snapshot_indx].reshape(-1,1)
+
+    # Reconstruct the tensor
+    tensor = torch.zeros(normalized_tensor.shape)
+    for i in range(len(alpha0_selected)):
+        tensor[i,:,0] = normalized_tensor[i,:,0] * alphaw_selected[i] + alpha0_selected[i]
+    
+    return tensor

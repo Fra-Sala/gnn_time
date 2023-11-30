@@ -68,7 +68,8 @@ class HyperParams:
         self.num_pos_batches = argv[7] #number of batches 
         self.T_f = argv[8]
         self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
-                            + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) +  '_rate' + str(self.rate) + '/'
+                            + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) +  '_rate' + str(self.rate) + '_numposbatches' + \
+                                str(self.num_pos_batches)+ '_posperbatch' + str(self.batch_pos_size)+ '_epochs'+str(self.max_epochs)+ '/'
 
 
 
