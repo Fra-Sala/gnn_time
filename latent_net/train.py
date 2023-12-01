@@ -111,10 +111,13 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                 # print("target (20 entries)", velocity_target)
                 loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                 train_loss += loss_rec.item()
+                loss_rec.backward(retain_graph=True)
+                
+        #stn.detach_()
 
-    loss_rec.backward()
-    optimizer.step()
-    optimizer.zero_grad()
+    
+        optimizer.step()
+        optimizer.zero_grad()
 
     return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches)
 

@@ -100,7 +100,11 @@ class RecNet(torch.nn.Module):
         super().__init__()
         self.fc1 = torch.nn.Linear(input_size, hidden_size)
         self.fc2 = torch.nn.Linear(hidden_size, hidden_size)
-        self.fc3 = torch.nn.Linear(hidden_size, output_size)
+        self.fc3 = torch.nn.Linear(hidden_size, hidden_size)
+        self.fc4 = torch.nn.Linear(hidden_size,  hidden_size)
+        self.fc5 = torch.nn.Linear(hidden_size, output_size)
+
+
         self.activation = torch.nn.Tanh()
 
     def forward(self, x):
