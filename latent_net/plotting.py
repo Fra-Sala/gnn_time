@@ -12,7 +12,7 @@ from latent_net import preprocessing_scale
 import matplotlib.colors as mcolors
 import torch
 
-def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, position_dataset, PARAMS, TIMES):
+def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
     """
     Plots the field solution for a given snapshot, the ground truth, and the error field.
 
@@ -29,11 +29,19 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, position_datase
     """
 
     fig = plt.figure(figsize=(15, 5))
-    z_net = preprocessing_scale.inverse_normalize_input(results, scaler_all, SNAP)
-    z_net = z_net.squeeze(0).squeeze(-1)
+    z_net = preprocessing_scale.inverse_normalize_input(results, scaler_all, SNAP, HyperParams)
+    # Now, if the second dimension of z_net is == 2, change z_net into a 1D array by computing the norm of each row
+    
+    if HyperParams.dim == 1:
+        z_net = z_net[:, 0]
+        ground_truth = dataset.U[:, SNAP]
+    if HyperParams.dim == 2:
+        z_net = np.linalg.norm(z_net, axis=1)
+        ground_truth = np.linalg.norm(dataset.U[:, HyperParams.dim*SNAP:HyperParams.dim*SNAP+2], axis=1)
+    
     xx = dataset.xx
     yy = dataset.yy
-    rel_error_field = abs(dataset.U[:, SNAP] - z_net) / np.linalg.norm(dataset.U[:, SNAP], 2)
+    rel_error_field = abs(ground_truth- z_net) / np.linalg.norm(ground_truth, 2)
 
     triang = np.asarray(dataset.T - 1)
     cmap = cm.get_cmap(name='jet', lut=None)
@@ -54,10 +62,9 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, position_datase
 
     # Subplot 2
     #average_dataset = torch.mean(dataset.U[:, :90], dim=1)
-    #norm2= mcolors.Normalize(vmin=average_dataset.min(), vmax=average_dataset.max())
-    norm2 = mcolors.Normalize(vmin=dataset.U[:, SNAP].min(), vmax=dataset.U[:, SNAP].max())
+    norm2 = mcolors.Normalize(vmin=ground_truth.min(), vmax=ground_truth.max())
     ax2 = plt.subplot(gs1[0, 1])  # Add second subplot
-    cs2 = ax2.tricontourf(xx[:, SNAP], yy[:, SNAP], triang, dataset.U[:,SNAP], 100, cmap=cmap, norm=norm2)
+    cs2 = ax2.tricontourf(xx[:, SNAP], yy[:, SNAP], triang, ground_truth, 100, cmap=cmap, norm=norm2)
     divider2 = make_axes_locatable(ax2)
     cax2 = divider2.append_axes("right", size="5%", pad=0.1)
     cbar2 = plt.colorbar(cs2, cax=cax2)

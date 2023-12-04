@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from gca_rom import scaling
 import numpy as np
+from datetime import datetime
 
 class HyperParams:
     """Class that holds the hyperparameters latent dyn-rec model.
@@ -67,9 +68,11 @@ class HyperParams:
         self.cross_validation = True
         self.num_pos_batches = argv[7] #number of batches 
         self.T_f = argv[8]
+        self.dim = argv[9]
         self.net_dir = './' + 'latent_NN' + '/' + self.variable + '_' + self.net_name +  '_latdim' + str(self.dim_latent) \
                             + '_seed' + str(self.seed) + '_lr' + str(self.learning_rate) +  '_rate' + str(self.rate) + '_numposbatches' + \
-                                str(self.num_pos_batches)+ '_posperbatch' + str(self.batch_pos_size)+ '_epochs'+str(self.max_epochs)+ '/'
+                                str(self.num_pos_batches)+ '_posperbatch' + str(self.batch_pos_size)+ '_epochs'+str(self.max_epochs)+ \
+                                    '_date_time' + datetime.now().strftime("%d_%m_%Y") + '/'
 
 
 
@@ -89,6 +92,7 @@ class DynNet(torch.nn.Module):
         x = self.activation(self.fc1(x))
         x = self.activation(self.fc2(x))
         x = self.fc3(x)
+        
         return x
 
             
@@ -110,6 +114,8 @@ class RecNet(torch.nn.Module):
     def forward(self, x):
         x = self.activation(self.fc1(x))
         x = self.activation(self.fc2(x))
-        x = self.fc3(x)
+        x = self.activation(self.fc3(x))
+        x = self.activation(self.fc4(x))
+        x = self.fc5(x)
         return x
 

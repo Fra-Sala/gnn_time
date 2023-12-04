@@ -44,7 +44,7 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     total_sims = len(params)
     # PROCESSING DATASET
     num_nodes = var.shape[0]
-    num_graphs = var.shape[1]
+    num_graphs = var.shape[1]//int(HyperParams.dim)
 
     print("Number of nodes processed: ", num_nodes)
     print("Number of simulations processed: ", total_sims)
@@ -76,7 +76,7 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     num_snapshots = int(num_graphs/total_sims)
     # Create a list of indices of the snapshots
     snapshots = list(range(num_graphs))
-    # Take the train_snapshots associeted with params_train
+    # Take the train_snapshots associated with params_train
     train_sims = (num_graphs) // len(params)*len(params_train)
     test_sims = num_graphs - train_sims
     train_snapshots = snapshots[0:train_sims]
@@ -87,12 +87,19 @@ def process_and_scale_dataset(dataset, HyperParams, params):
 
     # FEATURE SCALING
     # save the velocity fields of both datasets (one column contains all the velocities
-    var_train = dataset.U[:, train_snapshots]
-    var_test = dataset.U[:, test_snapshots]
+    if HyperParams.dim == 1:
+        train_indices = train_snapshots
+        test_indices = test_snapshots
+    else:
+        train_indices = [i for snapshot in train_snapshots for i in range(snapshot*HyperParams.dim, (snapshot+1)*HyperParams.dim)]
+        test_indices = [i for snapshot in test_snapshots for i in range(snapshot*HyperParams.dim, (snapshot+1)*HyperParams.dim)]
+
+    var_train = torch.tensor(dataset.U[:, train_indices])
+    var_test = torch.tensor(dataset.U[:, test_indices])
     # var_train = dataset.U
     # var_test = dataset.U
 
-    VAR_all, scaler_all = normalize_input(var)
+    VAR_all, scaler_all = normalize_input(torch.tensor(var))
     VAR_train,scaler_train = normalize_input(var_train)
     VAR_test, scaler_test = normalize_input(var_test)
 
@@ -106,20 +113,28 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     VAR_all_tensor = torch.tensor(VAR_all, dtype=torch.float64)
     VAR_train_tensor = torch.tensor(VAR_train, dtype=torch.float64)
     VAR_test_tensor = torch.tensor(VAR_test, dtype=torch.float64)
-    # Reshape the tensors to be consistent with the dimension in gca_rom. Possibly to be modified
-    VAR_all_tensor = VAR_all_tensor.permute(1, 0)
-    VAR_train_tensor = VAR_train_tensor.permute(1, 0)
-    VAR_test_tensor = VAR_test_tensor.permute(1, 0)
-    # Unsqueeze to be consistent with the dimension in gca_rom. Possibly to be modified
-    VAR_all_tensor = VAR_all_tensor.unsqueeze(2)
-    VAR_train_tensor = VAR_train_tensor.unsqueeze(2)
-    VAR_test_tensor = VAR_test_tensor.unsqueeze(2)
+
+    # Reshape the tensors to add a third dimension in case of multiple components of velocity 
+    n_pos = VAR_all_tensor.shape[0]
+    VAR_all_tensor = VAR_all_tensor.view(n_pos, VAR_all_tensor.shape[1] // HyperParams.dim, HyperParams.dim).permute(1, 0, 2)
+    VAR_train_tensor = VAR_train_tensor.view(n_pos, VAR_train_tensor.shape[1] // HyperParams.dim, HyperParams.dim).permute(1, 0, 2)
+    VAR_test_tensor = VAR_test_tensor.view(n_pos, VAR_test_tensor.shape[1] // HyperParams.dim, HyperParams.dim).permute(1, 0, 2)
+
+
+
+    # VAR_all_tensor = VAR_all_tensor.permute(1, 0)
+    # VAR_train_tensor = VAR_train_tensor.permute(1, 0)
+    # VAR_test_tensor = VAR_test_tensor.permute(1, 0)
+    # # Unsqueeze to be consistent with the dimension in gca_rom. Possibly to be modified
+    # VAR_all_tensor = VAR_all_tensor.unsqueeze(2)
+    # VAR_train_tensor = VAR_train_tensor.unsqueeze(2)
+    # VAR_test_tensor = VAR_test_tensor.unsqueeze(2)
 
 
 
     # Create PyTorch DataLoader objects for training and testing data
-    train_loader = DataLoader(VAR_train_tensor, batch_size=train_sims, shuffle=False)
-    test_loader = DataLoader(VAR_test_tensor, batch_size=test_sims, shuffle=False)
+    train_loader = DataLoader(VAR_train_tensor, batch_size=train_sims*HyperParams.dim, shuffle=False)
+    test_loader = DataLoader(VAR_test_tensor, batch_size=test_sims*HyperParams.dim, shuffle=False)
     
     # Create the position dataset
     x_positions = dataset.xx[:, 0]
@@ -153,15 +168,17 @@ def normalize_input(tensor):
 
 
 # define the inverse function of normalize input
-def inverse_normalize_input(normalized_tensor, scaler_all, snapshot_indx):
+def inverse_normalize_input(normalized_tensor, scaler_all, snapshot_indx, HyperParams):
     # Select indices from alpha0 and alphaw using test_snapshot_indx
     alpha0, alphaw = scaler_all[0], scaler_all[1]
-    alpha0_selected = alpha0[snapshot_indx].reshape(-1,1)
-    alphaw_selected = alphaw[snapshot_indx].reshape(-1,1)
+    alpha0_selected = alpha0[snapshot_indx*HyperParams.dim:snapshot_indx*HyperParams.dim+HyperParams.dim]#.reshape(-1,1)
+    alphaw_selected = alphaw[snapshot_indx*HyperParams.dim:snapshot_indx*HyperParams.dim+HyperParams.dim]#.reshape(-1,1)
 
     # Reconstruct the tensor
     tensor = torch.zeros(normalized_tensor.shape)
-    for i in range(len(alpha0_selected)):
-        tensor[i,:,0] = normalized_tensor[i,:,0] * alphaw_selected[i] + alpha0_selected[i]
+
+    for j in range(HyperParams.dim):
+        tensor[:,j] = normalized_tensor[:,j] * alphaw_selected[j] + alpha0_selected[j]
+       # tensor[i,:,0] = normalized_tensor[i,:,0] * alphaw_selected[i] + alpha0_selected[i]
     
     return tensor

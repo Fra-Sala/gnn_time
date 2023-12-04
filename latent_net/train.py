@@ -106,16 +106,29 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                 rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
                 velocity_pred = rec_model(rec_input)
                 # Take the velocities of the right snapshot of the series that defines the current simulation
-                velocity_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices, 0]
+                velocity_target = []
+                for i in range(data.size(2)):
+                    velocity_comp_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices, i]
+                    velocity_target.append(velocity_comp_target)
+                velocity_target = torch.cat(velocity_target, dim=0)
+               
                 # print("predicted (20 entries)", velocity_pred)
                 # print("target (20 entries)", velocity_target)
                 loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                 train_loss += loss_rec.item()
-                loss_rec.backward(retain_graph=True)
+                loss_rec.backward(retain_graph=True)  
+            
                 
+          
+
+                # if t == times[-1]:
+                #     for param in rec_model.parameters():
+                #             if param.grad is not None:
+                #                 param.grad = None 
+                    
         #stn.detach_()
 
-    
+        
         optimizer.step()
         optimizer.zero_grad()
 
@@ -156,7 +169,11 @@ def evaluate_model(dyn_model, rec_model, device, params_test, times, data, posit
                     x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
                     rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
                     velocity_pred = rec_model(rec_input)
-                    velocity_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices, 0]
+                    velocity_target = []
+                    for i in range(data.size(2)):
+                        velocity_comp_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices, i]
+                        velocity_target.append(velocity_comp_target)
+                    velocity_target = torch.cat(velocity_target, dim=0)
                     loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                     test_loss += loss_rec.item()
 
