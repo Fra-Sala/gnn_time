@@ -93,7 +93,7 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
 
 
 
-def plot_latent(stn_evolution, time_evolution):
+def plot_latent(stn_evolution, time_evolution, SNAP, HyperParams):
     
     plt.figure()
     for i in range(len(stn_evolution[0])):
@@ -104,4 +104,5 @@ def plot_latent(stn_evolution, time_evolution):
         plt.xlabel('Time')
         plt.ylabel('Latent state')
         plt.title('Latent state evolution')
+    plt.savefig(HyperParams.net_dir  + 'latent_state_evolution_' + str(SNAP) + '.png', bbox_inches='tight', dpi=500)
     plt.show()

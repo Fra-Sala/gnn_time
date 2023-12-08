@@ -8,7 +8,7 @@ import os
 from lid_driven_cavity_fenics import gaussian_process
 import matplotlib.pyplot as plt
 
-def test(dyn_model, rec_model, device, param, t, queried_positions, HyperParams):
+def test(dyn_model, rec_model, device, param, t, position_dataset, num_necessary_batches, HyperParams):
     """
     This function evaluates the dynamic and reconstruction models.
 
@@ -30,6 +30,7 @@ def test(dyn_model, rec_model, device, param, t, queried_positions, HyperParams)
     dyn_model.eval()
     rec_model.eval()
     stn = torch.zeros(HyperParams.dim_latent, device=device)
+    Z_net = torch.zeros((len(position_dataset), HyperParams.dim))
 
     with torch.no_grad():
         
@@ -48,9 +49,26 @@ def test(dyn_model, rec_model, device, param, t, queried_positions, HyperParams)
             stn = stn + HyperParams.dt * stn_derivative
             stn_vec.append(stn)
             t_integration.append(t_integration[-1] + HyperParams.dt)
-            
-        x_pos, y_pos = queried_positions[:,0], queried_positions[:,1]
-        rec_input = torch.cat((stn, x_pos.to(device), y_pos.to(device)), dim=0)
-        velocity_pred = rec_model(rec_input)
+        # Loop over the positions to have a prediction for the entire domain
+        for i in range(num_necessary_batches):
+            queried_positions = position_dataset[i*HyperParams.batch_pos_size:(i+1)*HyperParams.batch_pos_size]
+            x_pos, y_pos = queried_positions[:,0], queried_positions[:,1]
+            counter = 0
+            for x, y in zip(x_pos, y_pos):
+                x = x.unsqueeze(0)
+                y = y.unsqueeze(0)
+                rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+                velocity_pred = rec_model(rec_input)
+                if HyperParams.dim == 1:
+                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred
+                if HyperParams.dim == 2:
+                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred[0]
+                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 1] = velocity_pred[ 1]
+                        
+                counter +=1
 
-    return velocity_pred, stn_vec, t_integration
+                        
+         
+          
+
+    return Z_net, stn_vec, t_integration

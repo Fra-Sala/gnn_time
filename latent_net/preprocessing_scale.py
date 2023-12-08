@@ -57,11 +57,11 @@ def process_and_scale_dataset(dataset, HyperParams, params):
     # train_sims = 1
     # test_sims = 1
 
-    # train_snapshots = np.arange(0, 6, 1)
-    # test_snapshots = np.arange(6,12,1)
-    # params_train = params[0:2]
+    # train_snapshots = np.array([0])
+    # test_snapshots = np.array([1])
+    # params_train = params[0]
   
-    # params_test = params[2:4]
+    # params_test = params[1]
 
     # train_sims = 6
     # test_sims = 6
@@ -96,8 +96,7 @@ def process_and_scale_dataset(dataset, HyperParams, params):
 
     var_train = torch.tensor(dataset.U[:, train_indices])
     var_test = torch.tensor(dataset.U[:, test_indices])
-    # var_train = dataset.U
-    # var_test = dataset.U
+
 
     VAR_all, scaler_all = normalize_input(torch.tensor(var))
     VAR_train,scaler_train = normalize_input(var_train)
