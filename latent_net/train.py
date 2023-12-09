@@ -95,7 +95,7 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
 
             # Generate HyperParams.num_pos_batches random number between 0 and tot_pos_batches
             # These numbers will be the indices of the batches of positions that will be used for training
-                  
+            loss_rec = 0 
             # Take a batch of positions
             for j in pos_batch_sampler:
                 pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
@@ -104,6 +104,7 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                 velocity_targets = []
                 # Take each pair (x,y)
                 counter = 0
+               
                 for x, y in zip(x_pos, y_pos):
                     # Unsqueeze x and y
                     x = x.unsqueeze(0).detach()
@@ -118,10 +119,11 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                         velocity_target.append(velocity_comp_target)
                     velocity_target = torch.cat(velocity_target, dim=0)
 
-                    loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
+                    loss_rec += F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                     train_loss += loss_rec.item()
-                    loss_rec.backward(retain_graph=True)
+                    
                     counter = counter+1
+            loss_rec.backward(retain_graph=True)
 
         
         optimizer.step()
@@ -140,7 +142,7 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
                   
         
    
-    return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches)
+    return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches*HyperParams.batch_pos_size )
 
 
 
@@ -170,7 +172,7 @@ def evaluate_model(dyn_model, rec_model, device, params_eval, times, data, posit
                     stn_vec.append(stn)
                     t_integration.append(t_integration[-1] + HyperParams.dt)
 
-                
+                loss_rec = 0
                 for j in pos_batch_sampler:
                     pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
                     x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
@@ -187,8 +189,8 @@ def evaluate_model(dyn_model, rec_model, device, params_eval, times, data, posit
                             velocity_target.append(velocity_comp_target)
                         velocity_target = torch.cat(velocity_target, dim=0)
 
-                        loss_rec = F.mse_loss(velocity_pred, velocity_target, reduction="mean")
+                        loss_rec += F.mse_loss(velocity_pred, velocity_target, reduction="mean")
                         eval_loss += loss_rec.item()
                         counter += 1
 
-    return eval_loss / (len(params_eval)*len(times)*HyperParams.num_pos_batches)
+    return eval_loss / (len(params_eval)*len(times)*HyperParams.num_pos_batches*HyperParams.batch_pos_size )
