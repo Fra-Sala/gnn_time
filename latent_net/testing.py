@@ -50,22 +50,34 @@ def test(dyn_model, rec_model, device, param, t, position_dataset, num_necessary
             stn_vec.append(stn)
             t_integration.append(t_integration[-1] + HyperParams.dt)
         # Loop over the positions to have a prediction for the entire domain
-        for i in range(num_necessary_batches):
-            queried_positions = position_dataset[i*HyperParams.batch_pos_size:(i+1)*HyperParams.batch_pos_size]
-            x_pos, y_pos = queried_positions[:,0], queried_positions[:,1]
-            counter = 0
-            for x, y in zip(x_pos, y_pos):
-                x = x.unsqueeze(0)
-                y = y.unsqueeze(0)
-                rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
-                velocity_pred = rec_model(rec_input)
-                if HyperParams.dim == 1:
-                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred
-                if HyperParams.dim == 2:
-                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred[0]
-                    Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 1] = velocity_pred[ 1]
+
+        # Take a batch of positions
+        for j in range(len(position_dataset)):
+            x, y = position_dataset[j,0], position_dataset[j,1]
+            x = x.unsqueeze(0)
+            y = y.unsqueeze(0)
+            rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+            velocity_pred = rec_model(rec_input)
+            Z_net[j, :] = velocity_pred
+
+
+
+        # for i in range(num_necessary_batches):
+        #     queried_positions = position_dataset[i*HyperParams.batch_pos_size:(i+1)*HyperParams.batch_pos_size]
+        #     x_pos, y_pos = queried_positions[:,0], queried_positions[:,1]
+        #     counter = 0
+        #     for x, y in zip(x_pos, y_pos):
+        #         x = x.unsqueeze(0)
+        #         y = y.unsqueeze(0)
+        #         rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+        #         velocity_pred = rec_model(rec_input)
+        #         if HyperParams.dim == 1:
+        #             Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred
+        #         if HyperParams.dim == 2:
+        #             Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 0] = velocity_pred[0]
+        #             Z_net[i*HyperParams.batch_pos_size:i*HyperParams.batch_pos_size+counter, 1] = velocity_pred[1]
                         
-                counter +=1
+        #         counter +=1
 
                         
          

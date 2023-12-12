@@ -97,53 +97,59 @@ def train_one_epoch(dyn_model, rec_model, optimizer, device, params_train, times
             # These numbers will be the indices of the batches of positions that will be used for training
             loss_rec = 0 
             # Take a batch of positions
-            for j in pos_batch_sampler:
-                pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
-                x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
-                velocity_preds = []
-                velocity_targets = []
-                # Take each pair (x,y)
-                counter = 0
-               
-                for x, y in zip(x_pos, y_pos):
-                    # Unsqueeze x and y
-                    x = x.unsqueeze(0).detach()
-                    y = y.unsqueeze(0).detach()
-                    rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
-                    velocity_pred = rec_model(rec_input)
-                    # Take the target velocities vx and vy
-                    velocity_target = []
-                    for i in range(data.size(2)):
-                        velocity_comp_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices[counter], i]
-                        velocity_comp_target = velocity_comp_target.unsqueeze(0)
-                        velocity_target.append(velocity_comp_target)
-                    velocity_target = torch.cat(velocity_target, dim=0)
-
-                    loss_rec += F.mse_loss(velocity_pred, velocity_target, reduction="mean")
-                    train_loss += loss_rec.item()
-                    
-                    counter = counter+1
-            loss_rec.backward(retain_graph=True)
-
-        
-        optimizer.step()
-        optimizer.zero_grad()  
-           
-            
-
-                    # Take the velocities of the right snapshot of the series that defines the current simulation
-                #     velocity_target = []
-                    
-                #     velocity_targets.append(torch.cat(velocity_target, dim=0))
+            for j in range(len(position_dataset)):
+                x, y = position_dataset[j,0], position_dataset[j,1]
+                x = x.unsqueeze(0)
+                y = y.unsqueeze(0)
+                rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+                velocity_pred = rec_model(rec_input)
+                # Take the target velocities vx and vy
+                velocity_target = data[(alpha_indx*(len(times)-1)+t_indx), j, :]
+                last_loss = F.mse_loss(velocity_pred, velocity_target)
+                print(last_loss.item())
+                print(j)
+                loss_rec += last_loss
                 
-                # velocity_preds = torch.stack(velocity_preds)
-                # velocity_targets = torch.stack(velocity_targets)
-    
-                  
-        
-   
-    return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches*HyperParams.batch_pos_size )
+                
 
+    loss_rec = loss_rec / len(position_dataset)    
+    optimizer.zero_grad() 
+    train_loss += loss_rec.item()       
+    loss_rec.backward()
+    optimizer.step()
+    
+            
+    
+    return train_loss / (len(params_train)*len(times)*HyperParams.num_pos_batches)
+
+## WITH BATCHES
+# for j in pos_batch_sampler:
+#                 pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
+#                 x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
+#                 velocity_preds = []
+#                 velocity_targets = []
+#                 # Take each pair (x,y)
+#                 counter = 0
+               
+#                 for x, y in zip(x_pos, y_pos):
+#                     # Unsqueeze x and y
+#                     x = x.unsqueeze(0).detach()
+#                     y = y.unsqueeze(0).detach()
+#                     rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+#                     velocity_pred = rec_model(rec_input)
+#                     # Take the target velocities vx and vy
+#                     velocity_target = []
+#                     for i in range(data.size(2)):
+#                         velocity_comp_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices[counter], i]
+#                         velocity_comp_target = velocity_comp_target.unsqueeze(0)
+#                         velocity_target.append(velocity_comp_target)
+#                     velocity_target = torch.cat(velocity_target, dim=0)
+
+#                     loss_rec += F.mse_loss(velocity_pred, velocity_target, reduction="mean")
+#                     train_loss += loss_rec.item()
+                    
+#                     counter = counter+1
+#             loss_rec.backward()
 
 
 
@@ -172,25 +178,23 @@ def evaluate_model(dyn_model, rec_model, device, params_eval, times, data, posit
                     stn_vec.append(stn)
                     t_integration.append(t_integration[-1] + HyperParams.dt)
 
-                loss_rec = 0
-                for j in pos_batch_sampler:
-                    pos_indices = np.array(range(j*HyperParams.batch_pos_size, (j+1)*HyperParams.batch_pos_size))
-                    x_pos, y_pos = position_dataset[pos_indices, 0], position_dataset[pos_indices, 1]
-                    counter = 0
-                    for x, y in zip(x_pos, y_pos):
-                        x = x.unsqueeze(0)
-                        y = y.unsqueeze(0)
-                        rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
-                        velocity_pred = rec_model(rec_input)
-                        velocity_target = []
-                        for i in range(data.size(2)):
-                            velocity_comp_target = data[(alpha_indx*(len(times)-1)+t_indx), pos_indices[counter], i]
-                            velocity_comp_target = velocity_comp_target.unsqueeze(0)
-                            velocity_target.append(velocity_comp_target)
-                        velocity_target = torch.cat(velocity_target, dim=0)
+                loss_rec = 0 
+                # Take a batch of positions
+                for j in range(len(position_dataset)):
+                    x, y = position_dataset[j,0], position_dataset[j,1]
+                    x = x.unsqueeze(0)
+                    y = y.unsqueeze(0)
+                    rec_input = torch.cat((stn, x.to(device), y.to(device)), dim=0)
+                    velocity_pred = rec_model(rec_input)
+                    # Take the target velocities vx and vy
+                    velocity_target = data[(alpha_indx*(len(times)-1)+t_indx), j, :]
+                    loss_rec += F.mse_loss(velocity_pred, velocity_target)
 
-                        loss_rec += F.mse_loss(velocity_pred, velocity_target, reduction="mean")
-                        eval_loss += loss_rec.item()
-                        counter += 1
-
-    return eval_loss / (len(params_eval)*len(times)*HyperParams.num_pos_batches*HyperParams.batch_pos_size )
+                loss_rec = loss_rec / len(position_dataset)    
+               
+                eval_loss += loss_rec.item()       
+                
+          
+                  
+   
+    return eval_loss / (len(params_eval)*len(times)*HyperParams.num_pos_batches)
