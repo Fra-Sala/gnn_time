@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from gca_time import scaling
 from collections import defaultdict
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
@@ -10,6 +9,11 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.colors as mcolors
 from gca_time import preprocessing
+from matplotlib.ticker import FuncFormatter
+from scipy import interpolate
+import matplotlib.tri as mtri
+
+
 
 params = {'legend.fontsize': 'x-large',
          'axes.labelsize': 'x-large',
@@ -20,18 +24,16 @@ plt.rcParams.update(params)
 
 def plot_loss(HyperParams):
     """
-    Plots the history of losses during the training of the autoencoder.
+    Plots the history of losses during the training of the latent net + decoder.
 
-    Attributes:
-    HyperParams (namedtuple): An object containing the parameters of the autoencoder.
+    Parameters:
+    HyperParams (object): An object containing the parameters of the architecture.
     """
 
     history = np.load(HyperParams.net_dir+'history'+HyperParams.net_run+'.npy', allow_pickle=True).item()
     history_test = np.load(HyperParams.net_dir+'history_test'+HyperParams.net_run+'.npy', allow_pickle=True).item()
     ax = plt.figure().gca()
     ax.semilogy(history['train'])
-   # ax.semilogy(history['l2'])
-    #ax.semilogy(history_test['l1'], '--')
     ax.semilogy(history_test['test'], '--')
     plt.ylabel('Loss')
     plt.xlabel('Epochs')
@@ -48,11 +50,12 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
 
     SNAP: integer value indicating the snapshot to be plotted.
     results: array of shape (num_samples, num_features), representing the network's output.
-    scaler_all: instance of the scaler used to scale the data.
+    scaler_all: numpy.ndarray of scaling variables.
     HyperParams: instance of the Autoencoder parameters class containing information about the network architecture and training.
-    dataset: array of shape (num_samples, 3), representing the triangulation of the spatial domain.
-    xyz: list of arrays of shape (num_samples, num_features), containing the x, y and z-coordinates of the domain.
-    params: array of shape (num_features,), containing the parameters associated with each snapshot.
+    dataset: array of shape (num_samples, 3), representing the Fenics dataset.
+    PARAMS: array of shape (num_snap,), containing the parameters associated with each snapshot.
+    TIMES: array of shape (num_snap,), containing the time associated with each snapshot.
+    
     The function generates a plot of the field solution and saves it to disk using the filepath specified in HyperParams.net_dir.
     """
 
@@ -118,30 +121,178 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
 
     # Adjust layout
     plt.tight_layout()
-    plt.savefig(HyperParams.net_dir + 'field_solution_' + str(SNAP) + '.png', bbox_inches='tight', dpi=500)
+    plt.savefig(HyperParams.net_dir + 'field_solution_SNAP' + str(SNAP) + '.png', bbox_inches='tight', dpi=500)
     plt.show()
 
 
 
 
 def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
-    plt.figure()
+    """
+    This function plots the evolution of latent states over time and saves the plot as a .png file.
+
+    Parameters:
+    SNAP (int): The snapshot number.
+    latents (np.ndarray): The latent states.
+    params (list): The parameters.
+    time_evolution (np.ndarray): The time evolution.
+    HyperParams (object): The hyperparameters.
+
+    Returns:
+    None
+    """
+
+    # Create a new figure
+    plt.figure(figsize=(6, 5))
+
+    # Convert tensors to numpy arrays
     latents = latents.detach().numpy()
     time_evolution = time_evolution.detach().numpy()
-    sequence_length = latents.shape[0]//len(params)
+
+    # Calculate length of a simulation and sim index
+    sequence_length = latents.shape[0] // len(params)
     sequence_number = SNAP // sequence_length
     start = sequence_number * sequence_length
     end = start + sequence_length
+
+    # Plot each latent state over time
     for i in range(HyperParams.bottleneck_dim):
         stn_evolution = latents[start:end, i]
         times = latents[start:end, -1]
         plt.plot(times, stn_evolution)
+
     plt.xlabel('Time')
     plt.ylabel('Latent state')
     plt.title('Latent state evolution')
-    plt.savefig(HyperParams.net_dir+'_latents_evolution'+HyperParams.net_run+'_SNAP'+str(SNAP)+'.png', bbox_inches='tight', dpi=500)
+    plt.savefig(f"{HyperParams.net_dir}_latents_evolution_{HyperParams.net_run}_SNAP_{SNAP}.png", bbox_inches='tight', dpi=500)
     plt.show()
-    
+
+def plot_time_extrapolation(results, scaler_all, HyperParams, dataset, params, times, n_train_instants):
+    """
+    This function plots a metric of the error when performing a time extrapolation of the 
+    predictions.
+
+    Parameters:
+    results (numpy.ndarray): The tensor of the predicted fields (entire dataset, training and testing).
+    scaler_all (numpy.ndarray): The scaler used for normalization.
+    HyperParams (object): The hyperparameter object used in the model.
+    dataset (object): The dataset used in the model.
+    params (list): The parameters used in the model that define the training simulations 
+                   (the extrapolation concerns only the time, not the parameter space).
+    times (list): The times at which the results are obtained.
+    n_train_instants (int): The number of training instants per simulation (the remaining instants are used for
+                    the extrapolation).
+
+    Returns:
+    None
+    """
+
+    plt.figure(figsize=(8, 5))
+
+    # Exclude t = 0
+    times = times[1:]
+
+    # Initialize the Z_net and ground_truth arrays
+    Z_net = np.zeros((dataset.VX.shape[1], dataset.VX.shape[0],2))
+    ground_truth = np.zeros((dataset.VX.shape[1], dataset.VX.shape[0],2))
+
+    # Scale back the results over the entire dataset
+    for i in range(results.shape[0]):
+        out = preprocessing.inverse_normalize_input(results[i, :, :], scaler_all, i, HyperParams)
+        out = out.detach().numpy()
+        Z_net[i, :, :] = out
+        ground_truth[i, :, :] = np.column_stack((dataset.VX[:, i], dataset.VY[:, i]))
+
+    # Calculate the norms of the ground truth
+    ground_truth_norms = np.linalg.norm(ground_truth, axis=2)
+    ground_truth_norms_mean = np.mean(ground_truth_norms, axis=1)
+
+    # Calculate the NRMSE for each parameter and plot it
+    for (j, param) in enumerate(params):
+        NRMSE_list = []
+        for i in range(len(times)):
+            pred = Z_net[i+j*len(times)]
+            target = ground_truth[i+j*len(times)]
+            non_zero_indices = np.where(np.linalg.norm(target, axis=1) != 0)
+            err = np.sum((np.linalg.norm(pred[non_zero_indices] - target[non_zero_indices], axis=1)**2) / (ground_truth_norms_mean[i+j*len(times)]**2))
+            err = err / len(non_zero_indices[0])
+            NRMSE = np.sqrt(err)
+            NRMSE_list.append(NRMSE)
+        plt.semilogy(times, np.array(NRMSE_list), label = '$\mu$ = ' + str(np.around(param,2)))
+        plt.semilogy(times[:n_train_instants], np.array(NRMSE_list)[:n_train_instants], 'o', color='blue')
+        plt.semilogy(times[n_train_instants:], np.array(NRMSE_list)[n_train_instants:], 'x', color='red')
+        plt.grid(True, which="both", ls="-", alpha=0.5)
+    plt.xlabel('Time')
+    plt.ylabel('NRMSE')
+    plt.legend(loc='best')
+    plt.title('NRMSE for time extrapolation')
+    plt.savefig(HyperParams.net_dir+'NRMSE_time_extrapolation'+HyperParams.net_run+'.png', bbox_inches='tight', dpi=500)
+    plt.show()
+
+
+
+def plot_error(results, dataset, scaler_all, HyperParams, params, PARAMS, time, TIMES, train_trajectories):
+    """
+    This function plots the relative error between the predicted and actual results, for a number of parameters larger than 1
+    using time and each of the other n_params-1 parameters for the plot.
+
+    Parameters:
+    res (ndarray): The predicted results
+    VAR_all (ndarray): The actual results
+    scaler_all (object): The scaler object used for scaling the results
+    HyperParams (object): The HyperParams object holding the necessary hyperparameters
+    mu1_range (ndarray): Range of the first input variable
+    mu2_range (ndarray): Range of the second input variable
+    params (ndarray): The input variables
+    train_trajectories (ndarray): The indices of the training data
+    vars (str): The name of the variable being plotted
+    """
+    vars = 'vs $\mu$ and $t$'
+    Z_net = np.zeros((dataset.VX.shape[1], dataset.VX.shape[0],2))
+    ground_truth = np.zeros((dataset.VX.shape[1], dataset.VX.shape[0],2))
+
+    # Scale back the results over the entire dataset
+    for i in range(results.shape[0]):
+        out = preprocessing.inverse_normalize_input(results[i, :, :], scaler_all, i, HyperParams)
+        out = out.detach().numpy()
+        Z_net[i, :, :] = out
+        ground_truth[i, :, :] = np.column_stack((dataset.VX[:, i], dataset.VY[:, i]))
+    # Take only the magnitude of velocity
+    Z_net = np.linalg.norm(Z_net, axis=2)
+    ground_truth = np.linalg.norm(ground_truth, axis=2)
+    # Calculate the relative error
+    error = np.linalg.norm(Z_net - ground_truth, axis=1) / np.mean(np.linalg.norm(ground_truth, axis=1))
+        
+    colors = 0.0
+    area = 0.0 
+    tr_pt_1 = PARAMS[train_trajectories]
+    tr_pt_2 = TIMES[train_trajectories]
+
+    X1, X2 = np.meshgrid(params, time, indexing='ij')
+    output = np.reshape(error, (len(params), len(time)))
+    fig = plt.figure('Relative Error '+vars)
+    ax = fig.add_subplot()
+    colors = output.flatten()
+    area = output.flatten()*500
+
+    sc = plt.scatter(X1.flatten(), X2.flatten(), s=area, c= colors, alpha=0.5, cmap=cm.coolwarm)
+    plt.colorbar(sc, format=FuncFormatter(lambda x, pos: f'{x:.1e}'))
+    ax.set(xlim = [-10,10], #xlim=tuple([np.min(mu_i_range), np.max(mu_i_range)]
+            ylim=[0,2],
+            xlabel=f'$\mu$',
+            ylabel=f'$t$')
+        
+    ax.plot(tr_pt_1, tr_pt_2,'*r')
+    ax.set_title('Relative Error '+vars)
+
+    plt.tight_layout()
+    plt.savefig(HyperParams.net_dir+'relative_error_scatter'+HyperParams.net_run+'_'+'.png', transparent=True, dpi=500)
+    plt.show()
+
+
+
+
+
 # def plot_latent(HyperParams, latents, latents_estimation):
 #     """
 #     Plot the original and estimated latent spaces
@@ -196,7 +347,7 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
 #     # params = np.array(params)
     
 #     # For each parameter, realize a plot
-#     time_range = mu_space[-1]
+#     times = mu_space[-1]
 #     n_params = params.shape[1]
 #     colors = 0.0
 #     area = 0.0
@@ -215,8 +366,8 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
 #         #     tr_pt = [i for i in indices_dict if any(idx in train_trajectories for idx in indices_dict[i])]
 #         #     tr_pt_1 = [t[0] for t in tr_pt]
 #         #     tr_pt_2 = [t[1] for t in tr_pt]
-#         X1, X2 = np.meshgrid(mu_i_range, time_range, indexing='ij')
-#         output = np.reshape(error, (len(mu_i_range), len(time_range)))
+#         X1, X2 = np.meshgrid(mu_i_range, times, indexing='ij')
+#         output = np.reshape(error, (len(mu_i_range), len(times)))
 #         fig = plt.figure('Relative Error '+vars)
 #         ax = fig.add_subplot()
 #         # z_anchor = np.zeros_like(output)

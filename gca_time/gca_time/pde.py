@@ -156,7 +156,7 @@ def problem(argument):
             problem_name = "lid_cavity"
             variable = 'VX_VY'
             if 'google.colab' in str(get_ipython()):
-                alphas = np.load('/content/gca_time/alpha1.npy')
+                alphas = np.load('/content/gnn_time/gca_time/alpha1.npy')
             else:
                 alphas = np.load('../alpha1.npy')
             time = np.linspace(0,1.8,10)
