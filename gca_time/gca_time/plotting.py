@@ -37,6 +37,7 @@ def plot_loss(HyperParams):
     ax.semilogy(history_test['test'], '--')
     plt.ylabel('Loss')
     plt.xlabel('Epochs')
+    plt.grid(True, which="both", ls="-", alpha=0.5)
     plt.title('Loss over training epochs')
     plt.legend(['loss_train','loss_test'])
     plt.savefig(HyperParams.net_dir+'history_losses'+HyperParams.net_run+'.png', bbox_inches='tight', dpi=500)
@@ -151,7 +152,7 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
 
     # Calculate length of a simulation and sim index
     sequence_length = latents.shape[0] // len(params)
-    sequence_number = SNAP // sequence_length
+    sequence_number = int(SNAP / latents.shape[0] *sequence_length)
     start = sequence_number * sequence_length
     end = start + sequence_length
 
@@ -161,9 +162,10 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
         times = latents[start:end, -1]
         plt.plot(times, stn_evolution)
 
-    plt.xlabel('Time')
-    plt.ylabel('Latent state')
-    plt.title('Latent state evolution')
+    plt.xlabel('$t$')
+    plt.ylabel('$s(t)$')
+    plt.title('Latent state evolution $\mu = $'+ str(np.around(params[sequence_number],2)))
+    plt.grid(True, which="both", ls="-", alpha=0.5)
     plt.savefig(f"{HyperParams.net_dir}_latents_evolution_{HyperParams.net_run}_SNAP_{SNAP}.png", bbox_inches='tight', dpi=500)
     plt.show()
 
@@ -222,7 +224,7 @@ def plot_time_extrapolation(results, scaler_all, HyperParams, dataset, params, t
         plt.semilogy(times[:n_train_instants], np.array(NRMSE_list)[:n_train_instants], 'o', color='blue')
         plt.semilogy(times[n_train_instants:], np.array(NRMSE_list)[n_train_instants:], 'x', color='red')
         plt.grid(True, which="both", ls="-", alpha=0.5)
-    plt.xlabel('Time')
+    plt.xlabel('$t$')
     plt.ylabel('NRMSE')
     plt.legend(loc='best')
     plt.title('NRMSE for time extrapolation')
