@@ -141,7 +141,7 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
 
 
 
-def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
+def plot_latent(SNAP, latents, params, time, HyperParams):
     """
     This function plots the evolution of latent states over time and saves the plot as a .png file.
 
@@ -149,7 +149,6 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
     SNAP (int): The snapshot number.
     latents (np.ndarray): The latent states.
     params (list): The parameters.
-    time_evolution (np.ndarray): The time evolution.
     HyperParams (object): The hyperparameters.
 
     Returns:
@@ -161,11 +160,11 @@ def plot_latent(SNAP, latents, params, time_evolution, HyperParams):
 
     # Convert tensors to numpy arrays
     latents = latents.detach().numpy()
-    time_evolution = time_evolution.detach().numpy()
+    #time_evolution = time_evolution.detach().numpy()
 
     # Calculate length of a simulation and sim index
     sequence_length = latents.shape[0] // len(params)
-    sequence_number = int(SNAP / latents.shape[0] *sequence_length)
+    sequence_number =  SNAP//(time.shape[0]-1)  #int(SNAP / latents.shape[0] *sequence_length)
     start = sequence_number * sequence_length
     end = start + sequence_length
 
@@ -239,7 +238,7 @@ def plot_time_extrapolation(results, scaler_all, HyperParams, dataset, params, t
         plt.grid(True, which="both", ls="-", alpha=0.5)
     plt.xlabel('$t$')
     plt.ylabel('NRMSE')
-    plt.legend(loc='best')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.title('NRMSE for time extrapolation')
     plt.savefig(HyperParams.net_dir+'NRMSE_time_extrapolation'+HyperParams.net_run+'.png', bbox_inches='tight', dpi=500)
     plt.show()
