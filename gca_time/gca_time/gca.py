@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch_geometric.nn import GMMConv
+from memory_profiler import profile
 
 
 class Encoder(torch.nn.Module):
@@ -102,7 +103,7 @@ class Decoder(torch.nn.Module):
         forward(self, x, data):
             Performs a forward pass on the input data x and returns the output.
     """
-
+    
     def __init__(self, hidden_channels, bottleneck, input_size, ffn, skip, act=F.elu):
         super().__init__()
         self.hidden_channels = hidden_channels
@@ -121,7 +122,6 @@ class Decoder(torch.nn.Module):
             self.up_convs.append(GMMConv(self.hidden_channels[self.depth-1-i], self.hidden_channels[self.depth-i-2], dim=1, kernel_size=5))
         
         self.reset_parameters()
-
 
     def decoder(self, x, data):
         edge_weight = data.edge_attr

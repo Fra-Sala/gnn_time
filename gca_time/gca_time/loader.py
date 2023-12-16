@@ -32,10 +32,10 @@ class LoadDataset(Dataset):
         # Load your mat file here using scipy.io.loadmat
         self.data_mat = scipy.io.loadmat(root_dir)
         if dim_velocity == 1:
-            self.U = torch.tensor(self.data_mat[variable])
+            self.U = torch.tensor(self.data_mat[variable], dtype=torch.float32)
         elif dim_velocity == 2:
-            self.VX = torch.tensor(self.data_mat['VX'])
-            self.VY = torch.tensor(self.data_mat['VY'])
+            self.VX = torch.tensor(self.data_mat['VX'], dtype=torch.float32)
+            self.VY = torch.tensor(self.data_mat['VY'], dtype=torch.float32 )
         self.xx = torch.tensor(self.data_mat['xx'])
         self.yy = torch.tensor(self.data_mat['yy'])
         self.dim = 3

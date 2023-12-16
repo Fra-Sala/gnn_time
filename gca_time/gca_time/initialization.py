@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import random
 import warnings
+from memory_profiler import profile
 
 
 def set_device():
@@ -15,7 +16,7 @@ def set_device():
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print("Device used: ", device)
-    torch.set_default_dtype(torch.float64)
+    torch.set_default_dtype(torch.float32)
     warnings.filterwarnings("ignore")
     return device
 

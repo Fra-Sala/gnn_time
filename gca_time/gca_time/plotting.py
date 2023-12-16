@@ -94,6 +94,19 @@ def plot_fields(SNAP, results, scaler_all, HyperParams, dataset, PARAMS, TIMES):
     ax1.set_title('Prediction for $\mu$ = ' + str(np.around(PARAMS[SNAP], 2)) + str(' at t = ') + str(
         np.around(TIMES[SNAP], 2)))
 
+    # SCATTER PLOT: ATTEMPT TO AVOID GRANULARITY
+    # ax1 = plt.subplot(gs1[0, 0])
+    # cs1 = ax1.scatter(xx[:, SNAP], yy[:, SNAP], c=z_net, cmap=cmap, s= 2)
+    # divider1 = make_axes_locatable(ax1)
+    # cax1 = divider1.append_axes("right", size="5%", pad=0.1)
+    # cbar1 = plt.colorbar(cs1, cax=cax1)
+    # cbar1.formatter.set_powerlimits((0, 0))
+    # cbar1.update_ticks()
+    # ax1.set_aspect('equal', 'box')
+    # ax1.set_title('Prediction for $\mu$ = ' + str(np.around(PARAMS[SNAP], 2)) + str(' at t = ') \
+    #               + str(np.around(TIMES[SNAP], 2)))
+ 
+
     # Subplot 2
     #average_dataset = torch.mean(dataset.U[:, :90], dim=1)
     norm2 = mcolors.Normalize(vmin=ground_truth.min(), vmax=ground_truth.max())

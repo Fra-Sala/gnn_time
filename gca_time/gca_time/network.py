@@ -67,8 +67,8 @@ class HyperParams:
         self.epsilon =  0.0001
         self.net_dir = './' + self.net_name + '/' + self.net_run + '/' + self.variable + '_' + self.net_name + '_lmap' + str(self.lambda_map) + '_btt' + str(self.bottleneck_dim) \
                             + '_seed' + str(self.seed) + '_lv' + str(len(self.layer_vec)-2) + '_hc' + str(len(self.hidden_channels)) + '_nd' + str(self.nodes) \
-                            + '_ffn' + str(self.ffn) + '_skip' + str(self.skip) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate) +'/' # \
-                               #   + '_date' + datetime.now().strftime("%d_%m_%Y") + '/'
+                            + '_ffn' + str(self.ffn) + '_skip' + str(self.skip) + '_lr' + str(self.learning_rate) + '_sc' + str(self.scaling_type) + '_rate' + str(self.rate)  \
+                                + '_date' + datetime.now().strftime("%d_%m_%Y") + '/'
         self.cross_validation = True
 
 
@@ -110,7 +110,7 @@ class Net(torch.nn.Module):
         Runs a forward pass through the network using the input data and parameters.
         Returns the decoded output, encoded representation, and estimated encoded representation.
     """
-
+    
     def __init__(self, HyperParams):
         super().__init__()
         self.encoder = gca.Encoder(HyperParams.hidden_channels, HyperParams.bottleneck_dim, HyperParams.num_nodes, ffn=HyperParams.ffn, skip=HyperParams.skip)
@@ -148,7 +148,7 @@ class Net(torch.nn.Module):
     #         else: x = self.act_map(layer(x))
     #         idx += 1
     #     return x
-
+    
     def forward(self, z, data):
         #z = self.solo_encoder(data)
         #z_estimation = self.mapping(parameters)

@@ -36,9 +36,8 @@ def graphs_dataset(dataset, HyperParams, params):
        zz = dataset.zz
        xyz.append(zz)
        
-    var = np.zeros((dataset.VX.shape[0], dataset.VX.shape[1], 2))
-    var[:, :, 0] = dataset.VX
-    var[:, :, 1] = dataset.VY
+    var = torch.stack((dataset.VX, dataset.VY), dim=2)
+    var = var.to(dtype=torch.float32)
 
     # PROCESSING DATASET
     num_nodes = var.shape[0]
@@ -69,8 +68,8 @@ def graphs_dataset(dataset, HyperParams, params):
 
     # SCALING DATASET
     var_test = var[:, test_snapshots, :]
-    VAR_all, scaler_all = normalize_input(torch.tensor(var))
-    VAR_test, scaler_test = normalize_input(torch.tensor(var_test))
+    VAR_all, scaler_all = normalize_input(var)
+    VAR_test, scaler_test = normalize_input(var_test)
     VAR_all = VAR_all.view(VAR_all.shape[0], VAR_all.shape[1], HyperParams.dim_sol).permute(1, 0, 2)
     VAR_test = VAR_test.view(VAR_test.shape[0], VAR_test.shape[1], HyperParams.dim_sol).permute(1, 0, 2)
 

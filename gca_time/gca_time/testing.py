@@ -52,7 +52,7 @@ def evaluate(VAR, model_decoder, model_dyn, loader, params, times, HyperParams):
                 t_vec.append(t_vec[-1] + HyperParams.dt)
                 latents_states.append(stn)
                  
-            data = get_data(loader, counter) #(param_indx*(len(times)-1)+t_indx)
+            data = get_data(loader, counter)
             decoder_input = torch.cat((u_t.unsqueeze(0), stn), dim=0)
             results[counter, :, :] = model_decoder(decoder_input, data)
             counter += 1
